@@ -47,6 +47,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static float ColumnSpacing = 16f;  // separacion al pasar de dos columnas
         public static float HeightBudget = 0f;    // alto util en px; 0 = detectarlo (1000)
         public static float WidthBudget = 0f;     // ancho util en px; 0 = detectarlo (400)
+        public static int RetryFrames = 5;        // frames que se reintenta tras abrir
         public static bool Verbose = true;
 
         static readonly FieldInfo? FClasses =
@@ -60,6 +61,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static float itemNatural, vgapNatural, hgapNatural;
         static Vector2 origen;
         static bool yaListado;
+        static int ultimoTotal = -1, ultimoN = -1;
 
         [HarmonyPatch(typeof(CompendiumSectionChampUpgrades), "InitializeImpl")]
         [HarmonyPostfix]
@@ -73,19 +75,27 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         {
             if (!Enabled || seccion == null) return;
             Encajar(seccion);
-            // Al abrir, el layout puede no estar resuelto en el primer frame. Se repite al
-            // siguiente, y solo si el objeto esta activo: en InitializeImpl aun no lo esta.
+            // Al abrir, ni el layout esta resuelto ni estan creados todos los botones: el
+            // juego llena la columna "old" (tripulacion) uno o mas frames despues, y en la
+            // traza se ve la pasada intermedia con solo los clanes de la otra columna.
+            // Por eso se reintenta varios frames en vez de uno: en una maquina mas lenta,
+            // con un solo reintento esos clanes se quedarian sin colocar.
+            // Solo si el objeto esta activo: en InitializeImpl aun no lo esta.
             if (seccion.isActiveAndEnabled)
             {
-                try { seccion.StartCoroutine(EncajarAlSiguienteFrame(seccion)); }
+                try { seccion.StartCoroutine(EncajarUnosFrames(seccion)); }
                 catch (Exception e) { Log("no se pudo encolar el reintento: " + e.Message, true); }
             }
         }
 
-        static IEnumerator EncajarAlSiguienteFrame(CompendiumSectionChampUpgrades seccion)
+        static IEnumerator EncajarUnosFrames(CompendiumSectionChampUpgrades seccion)
         {
-            yield return null;
-            Encajar(seccion);
+            for (int i = 0; i < Mathf.Max(1, RetryFrames); i++)
+            {
+                yield return null;
+                if (seccion == null || !seccion.isActiveAndEnabled) yield break;
+                Encajar(seccion);
+            }
         }
 
         static void Encajar(CompendiumSectionChampUpgrades seccion)
@@ -128,8 +138,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     c1.localScale = Vector3.one;
                     if (c2 != null) c2.localScale = Vector3.one;
                     padre.localScale = new Vector3(ks, ks, 1f);
-                    Log($"{botones.Count} rombos, rejilla del juego, contenido " +
-                        $"{anchoContenido:0}x{contenido:0}, zona {zonaAncho:0}x{zonaAlto:0}, factor {ks:0.00}");
+                    if (botones.Count != ultimoTotal || ultimoN != 2)
+                    {
+                        ultimoTotal = botones.Count;
+                        ultimoN = 2;
+                        Log($"{botones.Count} rombos, rejilla del juego, contenido " +
+                            $"{anchoContenido:0}x{contenido:0}, zona {zonaAncho:0}x{zonaAlto:0}, factor {ks:0.00}");
+                    }
                     return;
                 }
 
@@ -203,11 +218,17 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     boton.localScale = Vector3.one;
                 }
 
-                Log($"rejilla {anchoRejilla:0}x{altoRejilla:0} centrada en {zona.name} " +
-                    $"({zona.rect.width:0}x{zona.rect.height:0}), salida ({x0:0}, {y0:0})");
-
-                Log($"{total} rombos en {mejorN} columnas de {filasFinal}, factor {mejorK:0.00} " +
-                    $"(zona {zonaAncho:0}x{zonaAlto:0}, rombo {itemNatural:0}, huecos {vgapNatural:0}/{hgap:0})");
+                // Se coloca en cada frame del reintento, pero la traza solo se escribe cuando
+                // el resultado cambia: si no, cada apertura dejaria RetryFrames lineas iguales.
+                if (total != ultimoTotal || mejorN != ultimoN)
+                {
+                    ultimoTotal = total;
+                    ultimoN = mejorN;
+                    Log($"rejilla {anchoRejilla:0}x{altoRejilla:0} centrada en {zona.name} " +
+                        $"({zona.rect.width:0}x{zona.rect.height:0}), salida ({x0:0}, {y0:0})");
+                    Log($"{total} rombos en {mejorN} columnas de {filasFinal}, factor {mejorK:0.00} " +
+                        $"(zona {zonaAncho:0}x{zonaAlto:0}, rombo {itemNatural:0}, huecos {vgapNatural:0}/{hgap:0})");
+                }
             }
             catch (Exception e)
             {

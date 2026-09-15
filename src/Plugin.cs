@@ -39,6 +39,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgAncho = Config.Bind(
                 "LogbookFit", "WidthBudget", 0f,
                 "Ancho util de la hoja en pixeles. 0 = detectarlo solo (medido: 400). Subelo a 440 para rombos a tamano original.");
+            var cfgReintentos = Config.Bind(
+                "LogbookFit", "RetryFrames", 5,
+                "Frames que se reintenta la colocacion tras abrir la pantalla. El juego crea los botones de la columna de tripulacion uno o mas frames despues.");
             var cfgTraza = Config.Bind(
                 "LogbookFit", "Verbose", true,
                 "Escribe en LogOutput.log lo que mide y lo que ajusta.");
@@ -49,6 +52,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookClanFit.ColumnSpacing = cfgSeparacion.Value;
             LogbookClanFit.HeightBudget = cfgAlto.Value;
             LogbookClanFit.WidthBudget = cfgAncho.Value;
+            LogbookClanFit.RetryFrames = cfgReintentos.Value;
             LogbookClanFit.Verbose = cfgTraza.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();

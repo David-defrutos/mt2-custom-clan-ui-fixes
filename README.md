@@ -35,7 +35,12 @@ cambia donde se dibuja.
 | `ColumnSpacing` | `16` | separacion entre columnas al pasar de dos (la del juego son 96) |
 | `HeightBudget` | `0` | alto util de la hoja en px; 0 = detectarlo (medido: 1000) |
 | `WidthBudget` | `0` | ancho util en px; 0 = detectarlo (medido: 400). A `440` los rombos quedan a tamano original, saliendose un poco del area nominal |
+| `RetryFrames` | `5` | frames que se reintenta la colocacion tras abrir la pantalla |
 | `Verbose` | `true` | traza en `LogOutput.log`, con las medidas y el factor aplicado |
+
+El reintento no es un parche a ciegas: el juego crea los botones de la columna de tripulacion
+**uno o mas frames despues** de abrir la pantalla, asi que la primera colocacion solo ve la
+otra mitad. La traza solo se escribe cuando el resultado cambia, no en cada reintento.
 
 ## Relacion con CustomClanHelper
 
