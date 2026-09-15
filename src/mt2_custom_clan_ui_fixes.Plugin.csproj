@@ -24,6 +24,6 @@
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" />
   </ItemGroup>
 
-  <!-- Nada de Trainworks ni Conductor: este mod no anade contenido, solo parchea
-       pantallas del juego base. -->
+  <!-- Este mod no anade contenido: solo parchea pantallas del juego base, asi que le
+       basta con BepInEx, la API del juego y los tipos de Unity. -->
 </Project>

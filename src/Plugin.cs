@@ -6,8 +6,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 {
     /// <summary>
     /// Arreglos de interfaz para jugar con muchos clanes modeados instalados.
-    /// No anade contenido y no depende de Trainworks ni de Conductor: solo parchea
-    /// pantallas del juego base con Harmony.
+    /// No anade contenido: solo parchea pantallas del juego base con Harmony.
     ///
     /// De momento uno solo: la pagina de mejoras de campeon del logbook
     /// (ver code/LogbookClanFit.cs).
