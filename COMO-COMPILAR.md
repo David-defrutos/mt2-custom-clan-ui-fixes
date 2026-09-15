@@ -58,6 +58,33 @@ dentro de `plugins\`**: BepInEx escanea en profundidad y cargaria el plugin dos 
 dotnet build .\src -c Release --output D:\Juegos\MT2_mod\_dll-build\out
 ```
 
+## Empaquetar para Thunderstore
+
+`thunderstore.toml` ya esta escrito, con el `icon.png` de 256x256 y el `README.md` como
+descripcion. Se empaqueta con el **Thunderstore CLI**:
+
+```powershell
+winget install --id Thunderstore.tcli      # solo la primera vez
+Set-Location "C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\David-CustomClanUIFixes"
+
+tcli build                                  # deja el zip en .\build\
+```
+
+Antes de empaquetar, **el DLL tiene que estar en la raiz del mod** (es lo que copia el
+bloque `[[build.copy]]`), o sea: bajarlo de Actions primero.
+
+Para publicar hace falta un token de servicio de Thunderstore:
+
+```powershell
+tcli publish --token <TOKEN>
+```
+
+Dos avisos antes de publicar nada:
+
+- Subir la version en **tres sitios a la vez**: `thunderstore.toml`, `manifest.json` y el
+  `<Version>` del csproj. Thunderstore rechaza una version ya subida.
+- El `versionNumber` tiene que ser `x.y.z`.
+
 ## Nota
 
 El puente de ficheros de la sesion de Claude **no puede escribir en `.github\workflows\`**.
