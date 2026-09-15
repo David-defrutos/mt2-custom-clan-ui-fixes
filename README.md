@@ -1,8 +1,8 @@
 # Custom Clan UI Fixes (Monster Train 2)
 
 Arreglos de interfaz para jugar con **muchos clanes** instalados. No añade
-contenido: ni cartas, ni unidades, ni clanes. Solo parchea pantallas del juego base con
-Harmony, asi que **no depende de Trainworks Reloaded ni de Conductor**.
+contenido: ni cartas, ni unidades, ni clanes. Parchea pantallas del juego base con
+Harmony.
 
 ![La pagina de mejoras de campeon del logbook, con 18 clanes instalados](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-champion-upgrades.png)
 
