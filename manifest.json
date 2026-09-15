@@ -1,0 +1,11 @@
+{
+  "namespace": "David",
+  "name": "CustomClanUIFixes",
+  "description": "UI fixes for playing Monster Train 2 with many modded clans installed",
+  "version_number": "0.1.0",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2100"
+  ],
+  "website_url": "https://github.com/David-defrutos/mt2-custom-clan-ui-fixes",
+  "FullName": "David-CustomClanUIFixes"
+}
