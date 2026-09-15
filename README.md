@@ -4,6 +4,11 @@ Arreglos de interfaz para jugar con **muchos clanes modeados** instalados. No an
 contenido: ni cartas, ni unidades, ni clanes. Solo parchea pantallas del juego base con
 Harmony, asi que **no depende de Trainworks Reloaded ni de Conductor**.
 
+![La pagina de mejoras de campeon del logbook, con 18 clanes instalados](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-champion-upgrades.png)
+
+<sub>Los 18 clanes en tres columnas, todos visibles y pulsables. Sin el mod, la lista se sale
+de la hoja por abajo y los ultimos no hay forma de seleccionarlos.</sub>
+
 ## Que arregla
 
 ### La pagina de mejoras de campeon del logbook
