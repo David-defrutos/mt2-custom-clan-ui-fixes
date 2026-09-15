@@ -17,3 +17,6 @@ desktop.ini
 
 # Salida del empaquetado de Thunderstore (tcli build)
 build/
+
+# El DLL lo compila Actions; se publica en los releases
+/mt2_custom_clan_ui_fixes.Plugin.dll
