@@ -1,6 +1,6 @@
 # Custom Clan UI Fixes (Monster Train 2)
 
-Arreglos de interfaz para jugar con **muchos clanes modeados** instalados. No anade
+Arreglos de interfaz para jugar con **muchos clanes** instalados. No añade
 contenido: ni cartas, ni unidades, ni clanes. Solo parchea pantallas del juego base con
 Harmony, asi que **no depende de Trainworks Reloaded ni de Conductor**.
 
