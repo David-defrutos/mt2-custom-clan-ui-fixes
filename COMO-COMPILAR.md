@@ -42,11 +42,11 @@ if ($LASTEXITCODE -eq 0) {
 
 ## Comprobar que va
 
-Con el juego abierto en el logbook, pagina de mejoras:
+Con el juego abierto en el logbook, pagina de mejoras y pagina de artefactos:
 
 ```powershell
 $log = "C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\LogOutput.log"
-Select-String -Path $log -Pattern '\[LogbookFit\]' | Select-Object -Last 10
+Select-String -Path $log -Pattern '\[LogbookFit\]|\[ArtifactsPaging\]' | Select-Object -Last 15
 ```
 
 ## Compilar en local
@@ -85,6 +85,8 @@ Get-ChildItem "$ui\build"
 El zip se sube a mano en https://thunderstore.io/c/monster-train-2/create/ (hace falta
 pertenecer a un **team** con el mismo nombre que el `namespace` del manifiesto).
 
+Publicado en: https://thunderstore.io/c/monster-train-2/p/frutos/CustomClanUIFixes/
+
 Tambien existe el **Thunderstore CLI** (`tcli build` / `tcli publish --token ...`), que lee
 el `thunderstore.toml` que hay en el repo. Se descarga de
 https://github.com/thunderstore-io/thunderstore-cli/releases. Hace lo mismo que el bloque de
@@ -95,6 +97,30 @@ Dos avisos antes de publicar nada:
 - Subir la version en **tres sitios a la vez**: `thunderstore.toml`, `manifest.json` y el
   `<Version>` del csproj. Thunderstore rechaza una version ya subida.
 - El `version_number` tiene que ser `x.y.z`.
+
+## Aviso: no instalar la version publicada en este perfil
+
+Esta carpeta ES el repositorio de desarrollo y vive dentro de
+`...\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes`, que es exactamente la
+carpeta que el Thunderstore Mod Manager reclama al instalar el mod publicado: la vacia
+antes de descomprimir. Al probarlo paso esto:
+
+```
+Failed to install mod [CustomClanUIFixes] to profile [Default]
+UnauthorizedAccessException: Access to the path
+'...\plugins\frutos-CustomClanUIFixes\.git\objects\00\1cd50d2...' is denied.
+```
+
+Solo se salvo porque `.git\objects` es de solo lectura. Reglas:
+
+- **Nunca instalar el mod publicado en el perfil `Default`.**
+- Probar la version publicada en un **perfil limpio** aparte.
+- Lo ideal es sacar este repo de `plugins\` (por ejemplo a `D:\Juegos\MT2_mod\repos\`) y
+  copiar solo el DLL al perfil de pruebas.
+
+La pestana **Online** del gestor va con cache: un mod recien subido tarda un rato en
+aparecer. Mientras tanto, *Import local mod* apuntando al zip de `build\`.
+
 
 ## Nota
 

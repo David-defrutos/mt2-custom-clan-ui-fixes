@@ -8,8 +8,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     /// Arreglos de interfaz para jugar con muchos clanes modeados instalados.
     /// No anade contenido: solo parchea pantallas del juego base con Harmony.
     ///
-    /// De momento uno solo: la pagina de mejoras de campeon del logbook
-    /// (ver code/LogbookClanFit.cs).
+    /// Dos pantallas del logbook, las dos por el mismo motivo (sus secciones no paginan):
+    ///   - mejoras de campeon, que se sale por abajo  (ver code/LogbookClanFit.cs)
+    ///   - artefactos, que se sale por la derecha     (ver code/LogbookArtifactsPaging.cs)
     /// </summary>
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
@@ -53,6 +54,28 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookClanFit.WidthBudget = cfgAncho.Value;
             LogbookClanFit.RetryFrames = cfgReintentos.Value;
             LogbookClanFit.Verbose = cfgTraza.Value;
+
+            var cfgArtActivo = Config.Bind(
+                "ArtifactsPaging", "Enabled", true,
+                "Pagina la pagina de artefactos del logbook cuando las columnas de clan no caben a lo ancho. Usa las flechas de paso de pagina del propio juego.");
+            var cfgArtColumnas = Config.Bind(
+                "ArtifactsPaging", "ColumnsPerPage", 0,
+                "Columnas por pagina. 0 = las que quepan segun el ancho medido.");
+            var cfgArtAncho = Config.Bind(
+                "ArtifactsPaging", "WidthBudget", 0f,
+                "Ancho util de la hoja en pixeles. 0 = detectarlo solo. Si el reparto se queda corto o largo, mira la linea 'zona:' del log y fija aqui el ancho bueno.");
+            var cfgArtReintentos = Config.Bind(
+                "ArtifactsPaging", "RetryFrames", 5,
+                "Frames que se reintenta el reparto tras abrir la pantalla, mientras el juego termina de crear y colocar las columnas.");
+            var cfgArtTraza = Config.Bind(
+                "ArtifactsPaging", "Verbose", true,
+                "Escribe en LogOutput.log lo que mide y como reparte.");
+
+            LogbookArtifactsPaging.Enabled = cfgArtActivo.Value;
+            LogbookArtifactsPaging.ColumnsPerPage = cfgArtColumnas.Value;
+            LogbookArtifactsPaging.WidthBudget = cfgArtAncho.Value;
+            LogbookArtifactsPaging.RetryFrames = cfgArtReintentos.Value;
+            LogbookArtifactsPaging.Verbose = cfgArtTraza.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 

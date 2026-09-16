@@ -4,7 +4,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "frutos"
 name = "CustomClanUIFixes"
-versionNumber = "0.1.0"
+versionNumber = "0.2.0"
 description = "UI fixes for playing with many modded clans installed"
 websiteUrl = "https://github.com/David-defrutos/mt2-custom-clan-ui-fixes"
 containsNsfwContent = false
