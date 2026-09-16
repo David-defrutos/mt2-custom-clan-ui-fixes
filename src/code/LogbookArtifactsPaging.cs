@@ -326,11 +326,17 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// El ancho de hoja que hay para las columnas: el rect mas estrecho de la cadena, que
         /// es el que de verdad recorta.
         ///
-        /// **La raiz cuenta**, y esto costo la primera prueba (16-sep): en la pagina de
-        /// mejoras la raiz de columnas se autoexpandia con sus hijos y por eso alli se
-        /// descarta, pero aqui la raiz es `Content`, 1456x936, y es justo la zona buena. Se
-        /// descarta solo si lleva un `ContentSizeFitter`, que es lo que hace que un
-        /// contenedor crezca con lo que tiene dentro y por tanto "siempre quepa".
+        /// **La raiz cuenta**, y esto costo dos pruebas (16-sep). En la pagina de mejoras la
+        /// raiz de columnas se autoexpandia con sus hijos, asi que alli no valia; aqui la
+        /// raiz es `Content`, 1456x936, y es justo la zona buena. Y no basta con mirar si
+        /// lleva un `ContentSizeFitter`: el de `Content` **solo ajusta el alto** (936 es el
+        /// alto del contenido), mientras que el ancho lo fijan las anclas. Descartarlo por
+        /// llevarlo devolvia 1920, con el que los 1836 px de columnas "caben" y no se
+        /// paginaba nada. Lo que se mira es `horizontalFit`: si es Unconstrained (0), el
+        /// ancho NO lo manda el contenido y ese rect si recorta.
+        ///
+        /// Todo se devuelve en el espacio local de la raiz, que es donde estan medidas las
+        /// columnas; un ancestro con otra escala se convierte con `lossyScale`.
         /// La traza deja la cadena entera para poder fijarlo a mano con `WidthBudget`.
         /// </summary>
         static float AnchoUtil(RectTransform raiz)
@@ -338,39 +344,60 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (WidthBudget > 1f) return WidthBudget;
 
             var traza = new StringBuilder();
-            bool raizCrece = TieneAjustador(raiz);
-            float menor = !raizCrece && raiz.rect.width > 1f ? raiz.rect.width : 0f;
+            float escalaRaiz = raiz.lossyScale.x;
+            float menor = 0f;
+
+            bool raizCrece = AnchoLoMandaElContenido(raiz);
+            if (!raizCrece && raiz.rect.width > 1f) menor = raiz.rect.width;
+            traza.Append($"{raiz.name} {raiz.rect.width:0}x{raiz.rect.height:0}")
+                 .Append(raizCrece ? " (el ancho lo manda el contenido, no cuenta)" : "");
+
             var p = raiz.parent as RectTransform;
             int saltos = 0;
             while (p != null && saltos++ < 8)
             {
                 float w = p.rect.width;
-                traza.Append($" <- {p.name} {w:0}x{p.rect.height:0}");
-                if (w > 1f && (menor <= 0f || w < menor)) menor = w;
+                // Al espacio de la raiz: si un padre esta escalado, sus px no son los mismos.
+                float w2 = escalaRaiz > 0.0001f ? w * (p.lossyScale.x / escalaRaiz) : w;
+                bool crece = AnchoLoMandaElContenido(p);
+                traza.Append($" <- {p.name} {w:0}x{p.rect.height:0}")
+                     .Append(Mathf.Abs(w2 - w) > 1f ? $" (={w2:0} en la raiz)" : "")
+                     .Append(crece ? " (crece, no cuenta)" : "");
+                if (!crece && w2 > 1f && (menor <= 0f || w2 < menor)) menor = w2;
                 p = p.parent as RectTransform;
             }
 
             if (!zonaTrazada)
             {
                 zonaTrazada = true;
-                Log($"zona: {raiz.name} {raiz.rect.width:0}x{raiz.rect.height:0}" +
-                    (raizCrece ? " (crece con el contenido, no cuenta)" : "") + traza +
-                    $" -> ancho util {menor:0}");
+                Log($"zona: {traza} -> ancho util {menor:0}");
             }
             return menor;
         }
 
         /// <summary>
-        /// Si el objeto lleva un ContentSizeFitter. Se mira por el nombre del tipo para no
-        /// tener que referenciar UnityEngine.UI, igual que en LogbookClanFit.
+        /// Si un `ContentSizeFitter` activo le esta fijando el ANCHO a este objeto, que es lo
+        /// que hace que crezca con lo que tiene dentro y por tanto "siempre quepa". Se mira
+        /// por reflexion, comparando el nombre del tipo y leyendo `horizontalFit`, para no
+        /// tener que referenciar UnityEngine.UI (misma tactica que en LogbookClanFit).
+        /// FitMode: 0 = Unconstrained, 1 = MinSize, 2 = PreferredSize.
         /// </summary>
-        static bool TieneAjustador(Transform t)
+        static bool AnchoLoMandaElContenido(Transform t)
         {
             foreach (var c in t.GetComponents<Component>())
             {
                 if (c == null) continue;
-                if (c.GetType().Name.Contains("ContentSizeFitter") && (c is not Behaviour b || b.enabled))
-                    return true;
+                if (!c.GetType().Name.Contains("ContentSizeFitter")) continue;
+                if (c is Behaviour b && !b.enabled) continue;
+                try
+                {
+                    var prop = c.GetType().GetProperty("horizontalFit");
+                    if (prop == null) return true;   // no se puede saber: se descarta, como antes
+                    var valor = prop.GetValue(c, null);
+                    if (valor == null) return true;
+                    return Convert.ToInt32(valor) != 0;
+                }
+                catch { return true; }
             }
             return false;
         }
