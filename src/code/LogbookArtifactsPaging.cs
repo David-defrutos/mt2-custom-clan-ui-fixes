@@ -51,7 +51,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool Enabled = true;
         public static int ColumnsPerPage = 0;      // 0 = las que quepan por ancho
         public static float WidthBudget = 0f;      // ancho util en px; 0 = detectarlo
-        public static int RetryFrames = 5;         // frames que se reintenta tras abrir
+        public static int RetryFrames = 10;        // frames que se reintenta tras abrir
         public static bool Verbose = true;
 
         static readonly FieldInfo? FColecciones =
@@ -65,9 +65,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly List<List<int>> paginas = new();
         static int pagina;
 
-        // Medidas naturales, tomadas UNA vez con todas las columnas visibles.
-        static readonly List<float> anchos = new();
-        static float separacion;
+        // Medidas naturales. NO valen a la primera: el juego coloca las columnas a lo largo
+        // de varios frames, y la pasada temprana da la primera con ancho y las demas a cero
+        // (medido el 16-sep: "21 columnas, la primera 288 px" y una sola pagina). Por eso se
+        // miden en cada pasada y solo se dan por buenas cuando **dos seguidas coinciden**.
+        static readonly List<float> anchos = new();    // ancho OCUPADO por columna, hueco incluido
+        static readonly List<float> previas = new();
+        static bool medidasEstables;
         static bool zonaTrazada;
         static int ultimoTotal = -1, ultimasPaginas = -1, ultimaPagina = -1;
 
@@ -79,7 +83,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         {
             // El juego acaba de rehacer las columnas: las medidas de antes ya no valen.
             anchos.Clear();
-            separacion = 0f;
+            previas.Clear();
+            medidasEstables = false;
             paginas.Clear();
             pagina = 0;
             Lanzar(__instance);
@@ -167,37 +172,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (columnas.Count == 0) return;
                 if (columnas[0].parent is not RectTransform raiz) return;
 
-                // --- medidas naturales. Solo valen con TODAS las columnas encendidas y el
-                // layout ya corrido; si alguna esta apagada (porque ya hemos repartido) se
-                // encienden y se mide al frame siguiente.
-                if (anchos.Count != columnas.Count)
+                // --- medidas naturales. Solo valen con TODAS las columnas encendidas: si
+                // alguna esta apagada (porque ya hemos repartido) se encienden y se mide al
+                // frame siguiente.
+                if (!medidasEstables || anchos.Count != columnas.Count)
                 {
                     bool todasVisibles = true;
                     foreach (var c in columnas)
                         if (!c.gameObject.activeSelf) { c.gameObject.SetActive(true); todasVisibles = false; }
                     if (!todasVisibles) return;
-
-                    // Si TODAS miden cero es que el layout aun no ha corrido: se reintenta al
-                    // frame siguiente. Una suelta a cero es una coleccion vacia (un clan sin
-                    // artefactos propios), y esa si vale: ocupa cero y no gasta hoja.
-                    anchos.Clear();
-                    float mayor = 0f;
-                    foreach (var c in columnas)
-                    {
-                        float w = Mathf.Max(0f, c.rect.width);
-                        if (w > mayor) mayor = w;
-                        anchos.Add(w);
-                    }
-                    if (mayor <= 1f) { anchos.Clear(); return; }
-
-                    separacion = 0f;
-                    if (columnas.Count >= 2)
-                    {
-                        float paso = Mathf.Abs(columnas[1].localPosition.x - columnas[0].localPosition.x);
-                        separacion = Mathf.Clamp(paso - anchos[0], 0f, 400f);
-                    }
-                    Log($"medidas naturales: {anchos.Count} columnas, la primera {anchos[0]:0} px, " +
-                        $"separacion {separacion:0}");
+                    if (!Medir(columnas)) return;   // aun sin colocar, o sin confirmar
                 }
 
                 float presupuesto = AnchoUtil(raiz);
@@ -209,7 +193,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 float usado = 0f;
                 for (int i = 0; i < columnas.Count; i++)
                 {
-                    float coste = enCurso.Count == 0 ? anchos[i] : separacion + anchos[i];
+                    float coste = anchos[i];
                     bool cabe = ColumnsPerPage > 0
                         ? enCurso.Count < ColumnsPerPage
                         : enCurso.Count == 0 || usado + coste <= presupuesto + 0.5f;
@@ -219,7 +203,6 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         paginas.Add(enCurso);
                         enCurso = new List<int>();
                         usado = 0f;
-                        coste = anchos[i];
                     }
                     enCurso.Add(i);
                     usado += coste;
@@ -233,6 +216,52 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             {
                 Log("fallo repartiendo la pagina: " + e, true);
             }
+        }
+
+        /// <summary>
+        /// El ancho que OCUPA cada columna, hueco incluido. Se mide por el paso hasta la
+        /// siguiente y no por su `rect`: el paso lo pone el layout ya resuelto, mientras que
+        /// el rect de una columna puede venir a cero mientras el juego la esta llenando.
+        ///
+        /// Y no se da por buena una sola pasada: el juego tarda varios frames en colocarlas
+        /// todas, asi que se guarda la medida y solo se acepta cuando la siguiente coincide.
+        /// </summary>
+        static bool Medir(List<RectTransform> columnas)
+        {
+            var ahora = new List<float>(columnas.Count);
+            for (int i = 0; i < columnas.Count; i++)
+            {
+                float paso = i + 1 < columnas.Count
+                    ? Mathf.Abs(columnas[i + 1].localPosition.x - columnas[i].localPosition.x)
+                    : 0f;
+                float ocupado = paso > 1f ? paso : Mathf.Max(0f, columnas[i].rect.width);
+                // La ultima no tiene paso: se le da el de su vecina si su rect no dice nada.
+                if (ocupado <= 1f && i > 0) ocupado = ahora[i - 1];
+                ahora.Add(ocupado);
+            }
+
+            float suma = 0f;
+            foreach (var w in ahora) suma += w;
+            if (suma <= 1f) { previas.Clear(); return false; }   // el layout aun no ha corrido
+
+            bool iguales = previas.Count == ahora.Count;
+            if (iguales)
+                for (int i = 0; i < ahora.Count; i++)
+                    if (Mathf.Abs(previas[i] - ahora[i]) > 0.5f) { iguales = false; break; }
+
+            previas.Clear();
+            previas.AddRange(ahora);
+            if (!iguales) return false;   // la de la pasada anterior no coincidia: seguimos
+
+            anchos.Clear();
+            anchos.AddRange(ahora);
+            medidasEstables = true;
+
+            var detalle = new StringBuilder();
+            for (int i = 0; i < ahora.Count; i++) detalle.Append(i == 0 ? "" : " ").Append($"{ahora[i]:0}");
+            Log($"medidas confirmadas: {ahora.Count} columnas, {suma:0} px en total, " +
+                $"ocupacion [{detalle}]");
+            return true;
         }
 
         /// <summary>
@@ -294,17 +323,23 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
-        /// El ancho de hoja que hay para las columnas. La raiz que las contiene no sirve: se
-        /// autoexpande con sus hijos, asi que siempre "cabe". Se coge el ancestro mas
-        /// estrecho, que es el que de verdad recorta, y se deja trazado para poder fijarlo a
-        /// mano con WidthBudget si el heuristico no acierta.
+        /// El ancho de hoja que hay para las columnas: el rect mas estrecho de la cadena, que
+        /// es el que de verdad recorta.
+        ///
+        /// **La raiz cuenta**, y esto costo la primera prueba (16-sep): en la pagina de
+        /// mejoras la raiz de columnas se autoexpandia con sus hijos y por eso alli se
+        /// descarta, pero aqui la raiz es `Content`, 1456x936, y es justo la zona buena. Se
+        /// descarta solo si lleva un `ContentSizeFitter`, que es lo que hace que un
+        /// contenedor crezca con lo que tiene dentro y por tanto "siempre quepa".
+        /// La traza deja la cadena entera para poder fijarlo a mano con `WidthBudget`.
         /// </summary>
         static float AnchoUtil(RectTransform raiz)
         {
             if (WidthBudget > 1f) return WidthBudget;
 
             var traza = new StringBuilder();
-            float menor = 0f;
+            bool raizCrece = TieneAjustador(raiz);
+            float menor = !raizCrece && raiz.rect.width > 1f ? raiz.rect.width : 0f;
             var p = raiz.parent as RectTransform;
             int saltos = 0;
             while (p != null && saltos++ < 8)
@@ -318,10 +353,26 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (!zonaTrazada)
             {
                 zonaTrazada = true;
-                Log($"zona: {raiz.name} {raiz.rect.width:0}x{raiz.rect.height:0}{traza}" +
+                Log($"zona: {raiz.name} {raiz.rect.width:0}x{raiz.rect.height:0}" +
+                    (raizCrece ? " (crece con el contenido, no cuenta)" : "") + traza +
                     $" -> ancho util {menor:0}");
             }
             return menor;
+        }
+
+        /// <summary>
+        /// Si el objeto lleva un ContentSizeFitter. Se mira por el nombre del tipo para no
+        /// tener que referenciar UnityEngine.UI, igual que en LogbookClanFit.
+        /// </summary>
+        static bool TieneAjustador(Transform t)
+        {
+            foreach (var c in t.GetComponents<Component>())
+            {
+                if (c == null) continue;
+                if (c.GetType().Name.Contains("ContentSizeFitter") && (c is not Behaviour b || b.enabled))
+                    return true;
+            }
+            return false;
         }
 
         static void Log(string mensaje, bool aviso = false)

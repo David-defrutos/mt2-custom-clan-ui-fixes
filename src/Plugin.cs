@@ -65,8 +65,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ArtifactsPaging", "WidthBudget", 0f,
                 "Ancho util de la hoja en pixeles. 0 = detectarlo solo. Si el reparto se queda corto o largo, mira la linea 'zona:' del log y fija aqui el ancho bueno.");
             var cfgArtReintentos = Config.Bind(
-                "ArtifactsPaging", "RetryFrames", 5,
-                "Frames que se reintenta el reparto tras abrir la pantalla, mientras el juego termina de crear y colocar las columnas.");
+                "ArtifactsPaging", "RetryFrames", 10,
+                "Frames que se reintenta el reparto tras abrir la pantalla, mientras el juego termina de crear y colocar las columnas. Las medidas no se dan por buenas hasta que dos pasadas seguidas coinciden, asi que conviene que sobren.");
             var cfgArtTraza = Config.Bind(
                 "ArtifactsPaging", "Verbose", true,
                 "Escribe en LogOutput.log lo que mide y como reparte.");
