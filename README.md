@@ -3,23 +3,29 @@
 UI fixes for playing with **many clans** installed. It adds no content: no cards, no units,
 no clans. It patches base-game screens with Harmony.
 
-![The logbook's champion upgrade page with 18 clans installed](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-champion-upgrades.png)
+![The logbook's artifacts page with 21 clans installed](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-artifacts-page1.png)
 
-<sub>18 clans in three columns, all visible and clickable. Without the mod the list runs off
-the bottom of the page and the last ones cannot be selected at all.</sub>
+<sub>The artifacts page with 21 clans installed: 24 columns split into two pages of 12,
+turned with the game's own arrows. Without the mod the last ones are drawn past the right
+edge of the sheet.</sub>
 
 ## What it fixes
 
 ### The logbook's champion upgrade page
+
+![The logbook's champion upgrade page with 21 clans installed](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-champion-upgrades.png)
+
+<sub>21 clans in three columns of seven, all visible and clickable, with the page heading
+left alone.</sub>
 
 The **Light Forge Upgrades** page lays the clans out in two fixed columns (regular clans and
 crew clans) and **does not paginate**: with a dozen mods installed the column runs off the
 bottom of the page and the last clans cannot be seen or selected.
 
 This mod measures the page, works out how many columns fit and lays the clan diamonds out in
-a grid that uses the full width, shrinking them only as much as needed. With 18 clans that is
-3 columns of 6 at 91% of the original size; the design holds up to about 45 clans before
-pagination would be needed.
+a grid that uses the full width, shrinking them only as much as needed and keeping the page
+heading clear. With 21 clans that is 3 columns of 7 at 87% of the original size, and the
+diamonds keep shrinking on their own as clans are added — around 30 they are at 61%.
 
 What it does **not** do: move buttons around in the hierarchy. The game rebuilds those
 buttons every time the screen opens, so reparenting them leaves duplicated, dead diamonds
@@ -36,6 +42,15 @@ game's own page-turn arrows** — the ones the compendium already draws for the 
 checklist pages. No new UI, no reparenting: paging is whole columns being switched on and
 off, and the game's layout closes the gaps. When every column already fits, nothing is
 hidden and no arrow appears.
+
+The pages come out evenly filled rather than cramming the first one: with 24 columns that is
+12 and 12, not 17 and 7. It balances by width, not by column count — the generic artifacts
+take four times the width of a clan column.
+
+![Page two of the artifacts page](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-artifacts-page2.png)
+
+<sub>Page two, reached with the arrow on the right. Without the mod these columns are drawn
+past the edge of the sheet and cannot be reached at all.</sub>
 
 ## Settings
 
@@ -101,9 +116,9 @@ columna se sale de la hoja por abajo y los ultimos clanes no hay forma de verlos
 seleccionarlos.
 
 Este mod mide la hoja, decide cuantas columnas caben y recoloca los rombos en una rejilla
-que aprovecha el ancho, encogiendolos solo lo justo. Con 18 clanes salen 3 columnas de 6 a
-un 91% del tamano original; el diseno aguanta hasta unos 45 clanes antes de tener que
-paginar.
+que aprovecha el ancho, encogiendolos solo lo justo y dejando libre el titulo de la hoja.
+Con 21 clanes salen 3 columnas de 7 a un 87% del tamano original, y los rombos siguen
+encogiendo solos segun se anaden clanes: sobre los 30 van al 61%.
 
 Lo que **no** hace: mover botones de sitio en la jerarquia. El juego reconstruye esos
 botones cada vez que se abre la pantalla, asi que cambiarlos de padre deja rombos
@@ -121,6 +136,10 @@ flechas de paso de pagina del propio juego**, las mismas que el compendio ya pin
 paginas de cartas y de coleccion. Ni UI nueva ni cambios de jerarquia: pasar de pagina es
 encender y apagar columnas enteras, y el layout del juego cierra los huecos. Si todas las
 columnas caben, no se esconde ninguna y no aparece ninguna flecha.
+
+Las paginas salen igual de llenas en vez de llenar la primera: con 24 columnas, 12 y 12, no
+17 y 7. El equilibrio es por ancho y no por numero de columnas, porque la de artefactos
+genericos ocupa cuatro veces lo que una de clan.
 
 ## Ajustes
 
