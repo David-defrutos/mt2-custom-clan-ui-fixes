@@ -33,6 +33,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgSeparacion = Config.Bind(
                 "LogbookFit", "ColumnSpacing", 16f,
                 "Separacion entre columnas cuando se pasa de dos. La del juego son 96 px.");
+            var cfgCabecera = Config.Bind(
+                "LogbookFit", "HeaderReserve", 130f,
+                "Pixeles que se reservan arriba para el titulo de la hoja. La zona medida lo incluye, asi que sin esto los rombos se le suben encima cuando hay muchos clanes.");
+            var cfgMultiplicador = Config.Bind(
+                "LogbookFit", "ScaleMultiplier", 1f,
+                "Multiplica el factor calculado, para dejar los rombos algo mas pequenos de lo que haria falta. 1 = lo justo para que quepan; 0,9 = un 10% mas pequenos.");
             var cfgAlto = Config.Bind(
                 "LogbookFit", "HeightBudget", 0f,
                 "Alto util de la hoja en pixeles. 0 = detectarlo solo (medido: 1000).");
@@ -50,6 +56,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookClanFit.MinScale = cfgEscalaMinima.Value;
             LogbookClanFit.MaxAutoColumns = cfgColumnas.Value;
             LogbookClanFit.ColumnSpacing = cfgSeparacion.Value;
+            LogbookClanFit.HeaderReserve = cfgCabecera.Value;
+            LogbookClanFit.ScaleMultiplier = cfgMultiplicador.Value;
             LogbookClanFit.HeightBudget = cfgAlto.Value;
             LogbookClanFit.WidthBudget = cfgAncho.Value;
             LogbookClanFit.RetryFrames = cfgReintentos.Value;

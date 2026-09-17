@@ -45,6 +45,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         // 3 o mas = rejilla propia, que reaprovecha el ancho pero es terreno experimental.
         public static int MaxAutoColumns = 2;
         public static float ColumnSpacing = 16f;  // separacion al pasar de dos columnas
+        // La zona medida (Clan selection, 400x1000) **incluye el encabezado** de la hoja.
+        // Con 17 clanes la rejilla ocupaba 778 y sobraban 111 px arriba, asi que no se
+        // notaba; con 21 pasa a 909, el margen se queda en 45 y los rombos de la primera
+        // fila se comen el titulo "Light Forge Upgrades". Esto reserva ese hueco: se resta
+        // del alto util y ademas baja el centro, que si no la rejilla encoge pero sigue
+        // centrada en el mismo sitio.
+        public static float HeaderReserve = 130f;
+        public static float ScaleMultiplier = 1f; // encoger un pelin mas, a gusto
         public static float HeightBudget = 0f;    // alto util en px; 0 = detectarlo (1000)
         public static float WidthBudget = 0f;     // ancho util en px; 0 = detectarlo (400)
         public static int RetryFrames = 5;        // frames que se reintenta tras abrir
@@ -121,6 +129,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 float zonaAlto = HeightBudget > 1f ? HeightBudget : zona.rect.height;
                 if (zonaAlto <= 1f || zonaAncho <= 1f) return;
 
+                // El encabezado de la hoja se queda fuera del reparto (ver HeaderReserve).
+                float reserva = Mathf.Clamp(HeaderReserve, 0f, zonaAlto * 0.5f);
+                zonaAlto -= reserva;
+
                 // --- camino seguro: la rejilla la sigue haciendo el juego y aqui solo se
                 // escala el contenedor hasta que quepa. Es lo unico que hay que hacer
                 // mientras las dos columnas del juego basten.
@@ -133,7 +145,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
                     float ks = Mathf.Min(1f, zonaAlto / contenido);
                     if (anchoContenido > 1f) ks = Mathf.Min(ks, zonaAncho / anchoContenido);
-                    ks = Mathf.Clamp(ks, MinScale, 1f);
+                    ks = Mathf.Clamp(ks * Mathf.Clamp(ScaleMultiplier, 0.1f, 1f), MinScale, 1f);
 
                     c1.localScale = Vector3.one;
                     if (c2 != null) c2.localScale = Vector3.one;
@@ -173,7 +185,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     float k = Mathf.Min(1f, Mathf.Min(zonaAlto / h, zonaAncho / w));
                     if (k > mejorK + 0.001f) { mejorK = k; mejorN = n; }
                 }
-                mejorK = Mathf.Clamp(mejorK, MinScale, 1f);
+                mejorK = Mathf.Clamp(mejorK * Mathf.Clamp(ScaleMultiplier, 0.1f, 1f), MinScale, 1f);
 
                 // La escala va en el contenedor: encoge tambien los huecos entre columnas.
                 // Se aplica ANTES de colocar, porque la colocacion va en coordenadas de mundo
@@ -196,8 +208,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 float anchoRejilla = (mejorN - 1) * pasoX + rombo;
                 float altoRejilla = (filasFinal - 1) * pasoY + rombo;
 
+                // El centro baja media reserva: la rejilla se centra en la hoja MENOS el
+                // encabezado, no en la hoja entera.
+                float centroY = zona.rect.center.y - reserva / 2f;
                 float x0 = zona.rect.center.x - anchoRejilla / 2f + rombo / 2f;
-                float y0 = zona.rect.center.y + altoRejilla / 2f - rombo / 2f;
+                float y0 = centroY + altoRejilla / 2f - rombo / 2f;
 
                 for (int i = 0; i < total; i++)
                 {
@@ -227,7 +242,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     Log($"rejilla {anchoRejilla:0}x{altoRejilla:0} centrada en {zona.name} " +
                         $"({zona.rect.width:0}x{zona.rect.height:0}), salida ({x0:0}, {y0:0})");
                     Log($"{total} rombos en {mejorN} columnas de {filasFinal}, factor {mejorK:0.00} " +
-                        $"(zona {zonaAncho:0}x{zonaAlto:0}, rombo {itemNatural:0}, huecos {vgapNatural:0}/{hgap:0})");
+                        $"(zona {zonaAncho:0}x{zonaAlto:0} tras reservar {reserva:0} de encabezado, " +
+                        $"rombo {itemNatural:0}, huecos {vgapNatural:0}/{hgap:0})");
                 }
             }
             catch (Exception e)

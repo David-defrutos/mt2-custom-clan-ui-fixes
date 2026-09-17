@@ -45,6 +45,8 @@ hidden and no arrow appears.
 |---|---|---|
 | `Enabled` | `true` | set to `false` and the screen is left exactly as the game draws it |
 | `MinScale` | `0.45` | how far a diamond may be shrunk |
+| `HeaderReserve` | `130` | px kept free at the top for the page heading. The measured area includes it, so without this the first row of diamonds climbs over the title once there are enough clans |
+| `ScaleMultiplier` | `1` | multiplies the computed factor, to leave the diamonds a little smaller than strictly needed (0.9 = 10% smaller) |
 | `MaxAutoColumns` | `3` | column cap. **2 = leave the game's own layout** and only scale it |
 | `ColumnSpacing` | `16` | gap between columns once past two (the game's own is 96) |
 | `HeightBudget` | `0` | usable page height in px; 0 = detect it (measured: 1000) |
@@ -128,6 +130,8 @@ columnas caben, no se esconde ninguna y no aparece ninguna flecha.
 |---|---|---|
 | `Enabled` | `true` | a `false` y la pantalla queda como la deja el juego |
 | `MinScale` | `0.45` | hasta donde se deja encoger un rombo |
+| `HeaderReserve` | `130` | pixeles que se reservan arriba para el titulo de la hoja. La zona medida lo incluye, asi que sin esto los rombos se le suben encima en cuanto hay bastantes clanes |
+| `ScaleMultiplier` | `1` | multiplica el factor calculado, para dejar los rombos algo mas pequenos de lo justo (0,9 = un 10% mas pequenos) |
 | `MaxAutoColumns` | `3` | columnas como mucho. **2 = no se toca la rejilla del juego**, solo se escala |
 | `ColumnSpacing` | `16` | separacion entre columnas al pasar de dos (la del juego son 96) |
 | `HeightBudget` | `0` | alto util de la hoja en px; 0 = detectarlo (medido: 1000) |
