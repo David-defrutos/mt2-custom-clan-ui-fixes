@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1
+
+- Store page only: screenshots of the artifacts page and of its second page, the champion
+  upgrade page reshot with 21 clans, and a README that describes what the mod actually does
+  now. **No changes to the mod itself** — 0.2.0 behaves exactly the same.
+
 ## v0.2.0
 
 - **Logbook, Artifacts page**: the clan columns are now paginated, so the ones that used to
