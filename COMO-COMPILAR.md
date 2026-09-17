@@ -30,24 +30,47 @@ if (-not $runId) { throw "Actions no ha registrado ningun run para $sha" }
 
 gh run watch $runId --exit-status     # se queda aqui hasta que acaba
 
-if ($LASTEXITCODE -eq 0) {
-    # gh run download NO sobrescribe: si queda el DLL de antes, falla y te deja el viejo
-    Remove-Item "$ddls\*" -Recurse -Force -ErrorAction SilentlyContinue
-    gh run download $runId --name mt2_custom_clan_ui_fixes.Plugin --dir $ddls
-    Copy-Item "$ddls\mt2_custom_clan_ui_fixes.Plugin.dll" $mod -Force
-} else {
+if ($LASTEXITCODE -ne 0) {
     gh run view $runId --log-failed | Select-String -Pattern 'error|MSB\d|NU\d{4}' | Select-Object -First 40
+    return
 }
+
+# gh run download NO sobrescribe: si queda el DLL de antes, falla y te deja el viejo
+Remove-Item "$ddls\*" -Recurse -Force -ErrorAction SilentlyContinue
+gh run download $runId --name mt2_custom_clan_ui_fixes.Plugin --dir $ddls
+
+# y puede no bajar nada sin dar error: hay que mirarlo, no darlo por hecho
+$dll = Get-ChildItem $ddls -Recurse -Filter mt2_custom_clan_ui_fixes.Plugin.dll | Select-Object -First 1
+if (-not $dll) { throw "el artefacto no ha bajado: $ddls esta vacio" }
+
+Copy-Item $dll.FullName $mod -Force
+"copiado $($dll.Length) bytes -> $mod"
 ```
+
+**El bloque va autocontenido a proposito**: `$mod` y `$ddls` se declaran arriba porque la
+terminal de la proxima vez no tiene por que ser la misma. Un `$runId` heredado de otra
+sesion apunta a un run viejo, y entonces se instala un DLL que no es el que acabas de
+compilar.
+
+**Y el juego tiene que estar CERRADO al copiar el DLL.** BepInEx lo carga al arrancar: con
+el juego abierto, la copia no hace nada y sigues viendo el comportamiento de antes. Paso el
+16-sep y costo una ronda entera de pensar que el parche no funcionaba.
 
 ## Comprobar que va
 
-Con el juego abierto en el logbook, pagina de mejoras y pagina de artefactos:
+Arranca el juego **despues** de copiar el DLL, abre el logbook en la pagina de mejoras y en
+la de artefactos, y mira la traza:
 
 ```powershell
 $log = "C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\LogOutput.log"
 Select-String -Path $log -Pattern '\[LogbookFit\]|\[ArtifactsPaging\]' | Select-Object -Last 15
 ```
+
+Este mod no tiene JSON, asi que el validador no lo mira: **la traza es la unica
+comprobacion**. Si no ves las lineas que esperas de la version nueva, lo primero a descartar
+es que el juego siga con el DLL viejo cargado. Se ve en el log: una sola linea
+`Plugin mt2_custom_clan_ui_fixes.Plugin is loaded!` significa un unico arranque, y si esa
+linea es anterior a la copia del DLL, estas mirando el mod de antes.
 
 ## Compilar en local
 
