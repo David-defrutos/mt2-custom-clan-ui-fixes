@@ -61,6 +61,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgArtColumnas = Config.Bind(
                 "ArtifactsPaging", "ColumnsPerPage", 0,
                 "Columnas por pagina. 0 = las que quepan segun el ancho medido.");
+            var cfgArtEquilibrio = Config.Bind(
+                "ArtifactsPaging", "Balance", true,
+                "Reparte las columnas en paginas igual de llenas (24 columnas -> 12 y 12) en vez de llenar la primera y dejar la ultima a medias (17 y 7).");
             var cfgArtAncho = Config.Bind(
                 "ArtifactsPaging", "WidthBudget", 0f,
                 "Ancho util de la hoja en pixeles. 0 = detectarlo solo. Si el reparto se queda corto o largo, mira la linea 'zona:' del log y fija aqui el ancho bueno.");
@@ -73,6 +76,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             LogbookArtifactsPaging.Enabled = cfgArtActivo.Value;
             LogbookArtifactsPaging.ColumnsPerPage = cfgArtColumnas.Value;
+            LogbookArtifactsPaging.Balance = cfgArtEquilibrio.Value;
             LogbookArtifactsPaging.WidthBudget = cfgArtAncho.Value;
             LogbookArtifactsPaging.RetryFrames = cfgArtReintentos.Value;
             LogbookArtifactsPaging.Verbose = cfgArtTraza.Value;
