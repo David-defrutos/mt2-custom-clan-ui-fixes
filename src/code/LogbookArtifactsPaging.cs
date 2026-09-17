@@ -50,6 +50,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         // --- ajustes, los rellena Plugin.Awake desde el config de BepInEx ---
         public static bool Enabled = true;
         public static int ColumnsPerPage = 0;      // 0 = las que quepan por ancho
+        public static bool Balance = true;         // paginas igual de llenas, no la 1a a tope
         public static float WidthBudget = 0f;      // ancho util en px; 0 = detectarlo
         public static int RetryFrames = 10;        // frames que se reintenta tras abrir
         public static bool Verbose = true;
@@ -72,7 +73,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly List<float> anchos = new();    // ancho OCUPADO por columna, hueco incluido
         static readonly List<float> previas = new();
         static bool medidasEstables;
-        static bool zonaTrazada;
+        static bool zonaTrazada, contenedorTrazado;
         static int ultimoTotal = -1, ultimasPaginas = -1, ultimaPagina = -1;
 
         // --------------------------------------------------------------- parches
@@ -184,31 +185,17 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     if (!Medir(columnas)) return;   // aun sin colocar, o sin confirmar
                 }
 
-                float presupuesto = AnchoUtil(raiz);
+                TrazarContenedor(raiz);
+                float presupuesto = AnchoUtil(raiz) - PaddingHorizontal(raiz);
                 if (presupuesto <= 1f) return;
 
                 // --- repartir columnas en paginas
+                var reparto = ColumnsPerPage > 0
+                    ? PorNumeroFijo(columnas.Count, ColumnsPerPage)
+                    : Balance ? Equilibrado(presupuesto) : Llenando(presupuesto);
+
                 paginas.Clear();
-                var enCurso = new List<int>();
-                float usado = 0f;
-                for (int i = 0; i < columnas.Count; i++)
-                {
-                    float coste = anchos[i];
-                    bool cabe = ColumnsPerPage > 0
-                        ? enCurso.Count < ColumnsPerPage
-                        : enCurso.Count == 0 || usado + coste <= presupuesto + 0.5f;
-
-                    if (!cabe)
-                    {
-                        paginas.Add(enCurso);
-                        enCurso = new List<int>();
-                        usado = 0f;
-                    }
-                    enCurso.Add(i);
-                    usado += coste;
-                }
-                if (enCurso.Count > 0) paginas.Add(enCurso);
-
+                paginas.AddRange(reparto);
                 pagina = Mathf.Clamp(pagina, 0, paginas.Count - 1);
                 Pintar(seccion);
             }
@@ -216,6 +203,69 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             {
                 Log("fallo repartiendo la pagina: " + e, true);
             }
+        }
+
+        /// <summary>
+        /// Reparto **equilibrado**: las mismas paginas que harian falta llenando, pero todas
+        /// igual de llenas. Con 24 columnas y hoja de 1456 salen 12 y 12 (1080 px cada una)
+        /// en vez de 17 y 7; con 21, 11 y 10; y asi.
+        ///
+        /// Se hace buscando la **capacidad mas pequena** con la que el reparto sigue cabiendo
+        /// en ese numero de paginas: reducir la capacidad obliga a adelantar el corte, y la
+        /// menor que no anade una pagina es justo la que deja la mas cargada lo mas ligera
+        /// posible. Es por ANCHO, no por numero de columnas: con la de genericos ocupando
+        /// cuatro veces lo que una de clan, dos paginas con el mismo numero de columnas no
+        /// se verian igual de llenas.
+        /// </summary>
+        static List<List<int>> Equilibrado(float presupuesto)
+        {
+            int objetivo = Llenando(presupuesto).Count;
+            if (objetivo <= 1) return Llenando(presupuesto);
+
+            float min = 0f;
+            foreach (var w in anchos) min = Mathf.Max(min, w);   // una columna no se parte
+            float bajo = min, alto = presupuesto;
+            for (int i = 0; i < 30 && alto - bajo > 0.5f; i++)
+            {
+                float medio = (bajo + alto) / 2f;
+                if (Llenando(medio).Count <= objetivo) alto = medio; else bajo = medio;
+            }
+            return Llenando(alto);
+        }
+
+        /// <summary>Reparto clasico: se van metiendo columnas hasta que no cabe otra.</summary>
+        static List<List<int>> Llenando(float capacidad)
+        {
+            var reparto = new List<List<int>>();
+            var enCurso = new List<int>();
+            float usado = 0f;
+            for (int i = 0; i < anchos.Count; i++)
+            {
+                if (enCurso.Count > 0 && usado + anchos[i] > capacidad + 0.5f)
+                {
+                    reparto.Add(enCurso);
+                    enCurso = new List<int>();
+                    usado = 0f;
+                }
+                enCurso.Add(i);
+                usado += anchos[i];
+            }
+            if (enCurso.Count > 0) reparto.Add(enCurso);
+            return reparto;
+        }
+
+        /// <summary>Reparto a ojo, con un numero fijo de columnas por pagina.</summary>
+        static List<List<int>> PorNumeroFijo(int total, int porPagina)
+        {
+            var reparto = new List<List<int>>();
+            var enCurso = new List<int>();
+            for (int i = 0; i < total; i++)
+            {
+                if (enCurso.Count >= porPagina) { reparto.Add(enCurso); enCurso = new List<int>(); }
+                enCurso.Add(i);
+            }
+            if (enCurso.Count > 0) reparto.Add(enCurso);
+            return reparto;
         }
 
         /// <summary>
@@ -229,13 +279,24 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static bool Medir(List<RectTransform> columnas)
         {
             var ahora = new List<float>(columnas.Count);
+            var rects = new List<float>(columnas.Count);
+            var pasos = new List<float>(columnas.Count);
             for (int i = 0; i < columnas.Count; i++)
             {
                 float paso = i + 1 < columnas.Count
                     ? Mathf.Abs(columnas[i + 1].localPosition.x - columnas[i].localPosition.x)
                     : 0f;
-                float ocupado = paso > 1f ? paso : Mathf.Max(0f, columnas[i].rect.width);
-                // La ultima no tiene paso: se le da el de su vecina si su rect no dice nada.
+                float rect = Mathf.Max(0f, columnas[i].rect.width);
+                rects.Add(rect);
+                pasos.Add(paso);
+
+                // Lo que ocupa de verdad es **el mayor de los dos**, y esto costo la tercera
+                // prueba (16-sep): la columna de genericos mide 288 de rect pero solo avanza
+                // 180, o sea que **se solapa** con la siguiente. Repartiendo por el paso, la
+                // primera pagina sumaba 1404 cuando ocupaba 1512 sobre 1456 de hoja, y la
+                // ultima columna se salia. El paso sigue haciendo falta como respaldo: el
+                // rect de una columna puede venir a cero mientras el juego la esta llenando.
+                float ocupado = Mathf.Max(rect, paso);
                 if (ocupado <= 1f && i > 0) ocupado = ahora[i - 1];
                 ahora.Add(ocupado);
             }
@@ -258,9 +319,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             medidasEstables = true;
 
             var detalle = new StringBuilder();
-            for (int i = 0; i < ahora.Count; i++) detalle.Append(i == 0 ? "" : " ").Append($"{ahora[i]:0}");
+            var detalleRect = new StringBuilder();
+            for (int i = 0; i < ahora.Count; i++)
+            {
+                detalle.Append(i == 0 ? "" : " ").Append($"{ahora[i]:0}");
+                detalleRect.Append(i == 0 ? "" : " ").Append($"{rects[i]:0}/{pasos[i]:0}");
+            }
             Log($"medidas confirmadas: {ahora.Count} columnas, {suma:0} px en total, " +
                 $"ocupacion [{detalle}]");
+            Log($"rect/paso por columna: [{detalleRect}]");
             return true;
         }
 
@@ -291,7 +358,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 ultimoTotal = columnas.Count;
                 ultimasPaginas = paginas.Count;
                 ultimaPagina = pagina;
-                Log($"{columnas.Count} columnas en {paginas.Count} pagina(s), " +
+                var reparto = new StringBuilder();
+                foreach (var p in paginas)
+                {
+                    float ancho = 0f;
+                    foreach (var i in p) if (i < anchos.Count) ancho += anchos[i];
+                    reparto.Append(reparto.Length == 0 ? "" : " + ").Append($"{p.Count} ({ancho:0} px)");
+                }
+                Log($"{columnas.Count} columnas en {paginas.Count} pagina(s) [{reparto}], " +
                     $"mostrando la {pagina + 1} con {visibles.Count}");
             }
         }
@@ -373,6 +447,57 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 Log($"zona: {traza} -> ancho util {menor:0}");
             }
             return menor;
+        }
+
+        /// <summary>
+        /// Vuelca una vez como esta montado el contenedor de columnas: sus componentes y, si
+        /// lleva un LayoutGroup, sus ajustes. Sirve para saber si las columnas se pueden
+        /// separar (subiendo `spacing`) o es el juego el que las pega.
+        /// </summary>
+        static void TrazarContenedor(RectTransform raiz)
+        {
+            if (contenedorTrazado || !Verbose) return;
+            contenedorTrazado = true;
+
+            var sb = new StringBuilder();
+            foreach (var c in raiz.GetComponents<Component>())
+            {
+                if (c == null) continue;
+                var tipo = c.GetType();
+                sb.Append(' ').Append(tipo.Name);
+                if (!tipo.Name.Contains("LayoutGroup")) continue;
+
+                sb.Append('(');
+                foreach (var nombre in new[] { "spacing", "cellSize", "constraint", "constraintCount",
+                                               "childForceExpandWidth", "childControlWidth",
+                                               "childAlignment", "reverseArrangement" })
+                {
+                    object? v = null;
+                    try { v = tipo.GetProperty(nombre)?.GetValue(c, null); } catch { }
+                    if (v != null) sb.Append(nombre).Append('=').Append(v).Append(' ');
+                }
+                sb.Append($"padding={PaddingHorizontal(raiz):0})");
+            }
+            Log($"contenedor {raiz.name}:{sb}");
+        }
+
+        /// <summary>El padding izquierdo + derecho del LayoutGroup de la raiz, si lo hay.</summary>
+        static float PaddingHorizontal(Transform t)
+        {
+            foreach (var c in t.GetComponents<Component>())
+            {
+                if (c == null || !c.GetType().Name.Contains("LayoutGroup")) continue;
+                try
+                {
+                    var pad = c.GetType().GetProperty("padding")?.GetValue(c, null);
+                    if (pad == null) continue;
+                    var izq = pad.GetType().GetProperty("left")?.GetValue(pad, null);
+                    var der = pad.GetType().GetProperty("right")?.GetValue(pad, null);
+                    return Convert.ToSingle(izq ?? 0) + Convert.ToSingle(der ?? 0);
+                }
+                catch { return 0f; }
+            }
+            return 0f;
         }
 
         /// <summary>
