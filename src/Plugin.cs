@@ -110,9 +110,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgSoltar = Config.Bind(
                 "ProgressGrid", "FreeFlagWidth", true,
                 "Quita childControlWidth a las dos filas de banderitas: es lo que hace que cada una recupere sus 48 px en vez de repartirse el ancho de la fila.");
-            var cfgProgEnLinea = Config.Bind(
-                "ProgressGrid", "ContainerInFlow", true,
-                "Mete el contenedor de aliados en la fila de la seccion (el juego lo trae con ignoreLayout y flotando sobre el retrato). Es lo que hace que las tres partes se repartan el ancho en vez de amontonarse a la izquierda.");
+            var cfgProgReparto = Config.Bind(
+                "ProgressGrid", "Layout", "overlay",
+                "Como se reparte el ancho dentro de la seccion. \"overlay\" = como lo dibuja el juego pero ancho: la placa de color se estira y las banderitas siguen encima de ella. \"inflow\" = el contenedor de aliados entra en la fila y la placa se estrecha a PlaqueWidth, porque se queda vacia.");
+            var cfgProgPlaca = Config.Bind(
+                "ProgressGrid", "PlaqueWidth", 370f,
+                "Ancho de la placa del retrato en el modo \"inflow\". Sin banderitas encima solo tiene que dar para el retrato y el nombre. No se usa en \"overlay\".");
             var cfgProgSeparacion = Config.Bind(
                 "ProgressGrid", "FlagSpacing", 6f,
                 "Separacion entre banderitas al calcular lo que pide la fila. La del juego son 6 px.");
@@ -124,7 +127,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.DetailSections = cfgProgDetalle.Value;
             LogbookProgressGrid.WidenSections = cfgProgEnsanchar.Value;
             LogbookProgressGrid.FreeFlagWidth = cfgProgSoltar.Value;
-            LogbookProgressGrid.ContainerInFlow = cfgProgEnLinea.Value;
+            LogbookProgressGrid.Layout = cfgProgReparto.Value;
+            LogbookProgressGrid.PlaqueWidth = cfgProgPlaca.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();

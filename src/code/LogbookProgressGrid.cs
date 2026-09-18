@@ -51,10 +51,18 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static int RowsPerPage = 0;    // filas por hoja; 0 = las que quepan de alto
         public static bool Verbose = true;
         public static int DetailSections = 1; // secciones que se vuelcan con todo el detalle
-        public static bool WidenSections = true;   // estirar la seccion a la celda
-        public static bool FreeFlagWidth = true;   // soltar el ancho de las banderitas
-        public static bool ContainerInFlow = true; // meter el contenedor de aliados en la fila
-        public static float FlagSpacing = 6f;      // separacion entre banderitas
+        public static bool WidenSections = true; // estirar la seccion a la celda
+        public static bool FreeFlagWidth = true; // soltar el ancho de las banderitas
+        public static float FlagSpacing = 6f;    // separacion entre banderitas
+        /// <summary>
+        /// Como se reparte el ancho dentro de la seccion:
+        ///   "overlay" (por defecto) — como lo dibuja el juego pero ancho: la placa de color
+        ///                             se estira y las banderitas siguen encima de ella;
+        ///   "inflow"                — el contenedor de aliados entra en la fila y la placa
+        ///                             se estrecha a `PlaqueWidth`, porque se queda vacia.
+        /// </summary>
+        public static string Layout = "overlay";
+        public static float PlaqueWidth = 370f;  // ancho de la placa en modo "inflow"
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -213,13 +221,27 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// 582 + 24 + 658 + 24 + 105 = **1393** de los 1440. Lo que sobra se lo queda el
         /// contenedor con `flexibleWidth = 1`.
         ///
-        /// Ninguna de las dos toca la jerarquia. Se apagan con `FreeFlagWidth`,
-        /// `WidenSections` y `ContainerInFlow`.
+        /// Ninguna de las dos toca la jerarquia.
+        ///
+        /// **Y una vez hay sitio, hay que decidir que hacer con el.** Probado en partida el
+        /// 18-sep: metiendo el contenedor en la fila la hoja se llena, pero la placa de color
+        /// **se queda vacia**, porque las banderitas vivian encima de ella —para eso estaba el
+        /// `ignoreLayout`— y se van a la derecha, sobre el pergamino. De ahi los dos modos de
+        /// `Layout`:
+        ///
+        ///   - **`overlay`** (por defecto): se respeta el diseno del juego y se ensancha. La
+        ///     placa se estira hasta el medidor de cartas —quitandole su `ContentSizeFitter`,
+        ///     que es quien la clava en 582— y el contenedor sigue flotando encima, ya con
+        ///     sitio para las doce banderitas.
+        ///   - **`inflow`**: el contenedor entra en la fila y la placa se estrecha a
+        ///     `PlaqueWidth`, lo que ocupa el retrato, ya que se queda sin banderitas.
         /// </summary>
         static void Ensanchar(float anchoCelda)
         {
             if (anchoCelda <= 1f) return;
-            if (!WidenSections && !FreeFlagWidth && !ContainerInFlow) return;
+            if (!WidenSections && !FreeFlagWidth) return;
+
+            bool superponer = !Layout.Equals("inflow", StringComparison.OrdinalIgnoreCase);
 
             foreach (var s in secciones)
             {
@@ -231,22 +253,56 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     FijarAncho(seccion, anchoCelda);
                 }
 
+                // Las tres partes, por nombre.
+                Transform? placa = null, contenedor = null, medidor = null;
                 foreach (Transform h in seccion)
                 {
-                    if (!h.name.Contains("victory container")) continue;
+                    if (h.name.Contains("Main class section")) placa = h;
+                    else if (h.name.Contains("victory container")) contenedor = h;
+                    else if (h.name.Contains("Card mastery")) medidor = h;
+                }
+                if (contenedor == null) continue;
 
-                    // Primero las filas: de ellas sale lo que el contenedor tiene que pedir.
-                    float pideFila = 0f;
-                    foreach (Transform f in h) pideFila = Mathf.Max(pideFila, Fila(f));
+                // Las filas primero: de ellas sale lo que pide el contenedor.
+                float pideFila = 0f;
+                foreach (Transform f in contenedor) pideFila = Mathf.Max(pideFila, Fila(f));
+                if (pideFila <= 1f) continue;
+                float pideContenedor = pideFila + 16f;   // relleno del VerticalLayoutGroup
 
-                    if (ContainerInFlow && pideFila > 1f)
+                if (!WidenSections) continue;
+
+                float hueco = LeerFloat(Componente(seccion, "HorizontalLayoutGroup"), "spacing", 24f);
+                float anchoMedidor = medidor is RectTransform rm && rm.rect.width > 1f ? rm.rect.width : 105f;
+
+                if (superponer)
+                {
+                    // --- Modo "overlay": el diseno del juego, pero ancho.
+                    // La placa se estira hasta donde empieza el medidor de cartas, y el
+                    // contenedor de aliados sigue flotando encima de ella.
+                    float anchoPlaca = Mathf.Max(200f, anchoCelda - anchoMedidor - hueco * 2f);
+                    if (placa != null)
                     {
-                        // El ancho propio del contenedor: lo que pide la fila mas ancha, mas
-                        // el relleno de su VerticalLayoutGroup (el juego usa 16).
-                        float propio = Mathf.Min(pideFila + 16f, anchoCelda - 24f);
-                        EnFila(h, propio);
+                        SoltarAjustador(placa);          // su ContentSizeFitter la clava en 582
+                        PreferirAncho(placa, anchoPlaca);
+                        FijarAncho(placa, anchoPlaca);
                     }
-                    break;
+
+                    PonerIgnoreLayout(contenedor, true);
+                    float desde = contenedor is RectTransform rc ? Mathf.Abs(rc.anchoredPosition.x) : 0f;
+                    float cabe = Mathf.Max(pideContenedor, anchoPlaca - desde - hueco);
+                    if (contenedor is RectTransform rcont) FijarAncho(rcont, cabe);
+                }
+                else
+                {
+                    // --- Modo "inflow": el contenedor entra en la fila y la placa se
+                    // estrecha a lo que ocupa el retrato, porque se queda sin banderitas.
+                    if (placa != null)
+                    {
+                        SoltarAjustador(placa);
+                        PreferirAncho(placa, Mathf.Max(100f, PlaqueWidth));
+                        FijarAncho(placa, Mathf.Max(100f, PlaqueWidth));
+                    }
+                    EnFila(contenedor, Mathf.Min(pideContenedor, anchoCelda - hueco));
                 }
             }
         }
@@ -268,6 +324,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 t.GetProperty("flexibleWidth")?.SetValue(le, 1f, null);
             }
             catch (Exception e) { Log($"no se pudo meter en fila {contenedor.name}: {e.Message}", true); }
+        }
+
+        static void PonerIgnoreLayout(Transform t, bool valor)
+        {
+            var le = LayoutElementDe(t);
+            if (le == null) return;
+            try { le.GetType().GetProperty("ignoreLayout")?.SetValue(le, valor, null); }
+            catch (Exception e) { Log($"no se pudo poner ignoreLayout en {t.name}: {e.Message}", true); }
         }
 
         /// <summary>
@@ -399,6 +463,18 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             foreach (var c in t.GetComponents<Component>())
                 if (c != null && c.GetType().Name.Contains(nombreTipo)) return c;
             return null;
+        }
+
+        static float LeerFloat(Component? c, string propiedad, float porDefecto)
+        {
+            if (c == null) return porDefecto;
+            try
+            {
+                var v = c.GetType().GetProperty(propiedad)?.GetValue(c, null);
+                if (v != null) return Convert.ToSingle(v);
+            }
+            catch { }
+            return porDefecto;
         }
 
         static void PonerBool(Component c, string propiedad, bool valor)
