@@ -89,6 +89,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookArtifactsPaging.RetryFrames = cfgArtReintentos.Value;
             LogbookArtifactsPaging.Verbose = cfgArtTraza.Value;
 
+            var cfgProgTraza = Config.Bind(
+                "ProgressGrid", "Verbose", true,
+                "Vuelca en LogOutput.log como esta montada la hoja de progreso del logbook. De momento SOLO traza: no cambia nada de esa pantalla.");
+            var cfgProgDetalle = Config.Bind(
+                "ProgressGrid", "DetailSections", 2,
+                "Cuantas secciones de clan se vuelcan con todo el detalle. El resto, solo el nombre y cuantas banderitas tiene.");
+
+            LogbookProgressGrid.Verbose = cfgProgTraza.Value;
+            LogbookProgressGrid.DetailSections = cfgProgDetalle.Value;
+
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
