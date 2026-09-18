@@ -290,7 +290,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     PonerIgnoreLayout(contenedor, true);
                     float desde = contenedor is RectTransform rc ? Mathf.Abs(rc.anchoredPosition.x) : 0f;
                     float cabe = Mathf.Max(pideContenedor, anchoPlaca - desde - hueco);
-                    if (contenedor is RectTransform rcont) FijarAncho(rcont, cabe);
+                    FijarAncho(contenedor, cabe);
                 }
                 else
                 {
@@ -487,8 +487,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// Ancho, respetando las anclas. `SetSizeWithCurrentAnchors` es lo unico que se porta
         /// igual con anclas fijas y con anclas estiradas.
         /// </summary>
-        static void FijarAncho(RectTransform rt, float ancho)
+        static void FijarAncho(Transform? t, float ancho)
         {
+            if (t is not RectTransform rt) return;
             try
             {
                 if (Mathf.Abs(rt.rect.width - ancho) < 0.5f) return;
