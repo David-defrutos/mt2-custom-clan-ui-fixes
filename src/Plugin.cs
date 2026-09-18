@@ -89,13 +89,25 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookArtifactsPaging.RetryFrames = cfgArtReintentos.Value;
             LogbookArtifactsPaging.Verbose = cfgArtTraza.Value;
 
+            var cfgProgActivo = Config.Bind(
+                "ProgressGrid", "Enabled", true,
+                "Pone la hoja de progreso del logbook a una columna y la pagina, para que se vean todos los clanes y las banderitas de aliados no se aplasten.");
+            var cfgProgColumnas = Config.Bind(
+                "ProgressGrid", "Columns", 1,
+                "Columnas de la rejilla de clanes. 1 = una seccion por fila, que es lo que deja sitio a las banderitas; 2 = la rejilla del juego.");
+            var cfgProgFilas = Config.Bind(
+                "ProgressGrid", "RowsPerPage", 0,
+                "Filas por hoja. 0 = las que quepan de alto (con la celda del juego, 5).");
             var cfgProgTraza = Config.Bind(
                 "ProgressGrid", "Verbose", true,
-                "Vuelca en LogOutput.log como esta montada la hoja de progreso del logbook. De momento SOLO traza: no cambia nada de esa pantalla.");
+                "Escribe en LogOutput.log la rejilla, el reparto en sub-paginas y el detalle de las primeras secciones.");
             var cfgProgDetalle = Config.Bind(
-                "ProgressGrid", "DetailSections", 2,
-                "Cuantas secciones de clan se vuelcan con todo el detalle. El resto, solo el nombre y cuantas banderitas tiene.");
+                "ProgressGrid", "DetailSections", 1,
+                "Cuantas secciones de clan se vuelcan con todo el detalle.");
 
+            LogbookProgressGrid.Enabled = cfgProgActivo.Value;
+            LogbookProgressGrid.Columns = cfgProgColumnas.Value;
+            LogbookProgressGrid.RowsPerPage = cfgProgFilas.Value;
             LogbookProgressGrid.Verbose = cfgProgTraza.Value;
             LogbookProgressGrid.DetailSections = cfgProgDetalle.Value;
 
