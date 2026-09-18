@@ -51,9 +51,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static int RowsPerPage = 0;    // filas por hoja; 0 = las que quepan de alto
         public static bool Verbose = true;
         public static int DetailSections = 1; // secciones que se vuelcan con todo el detalle
-        public static bool WidenSections = true; // estirar seccion y contenedor de aliados
-        public static bool FreeFlagWidth = true; // soltar el ancho de las banderitas
-        public static float FlagSpacing = 6f;    // separacion entre banderitas al recolocarlas
+        public static bool WidenSections = true;   // estirar la seccion a la celda
+        public static bool FreeFlagWidth = true;   // soltar el ancho de las banderitas
+        public static bool ContainerInFlow = true; // meter el contenedor de aliados en la fila
+        public static float FlagSpacing = 6f;      // separacion entre banderitas
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -185,32 +186,40 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         // ------------------------------------------------------------- ancho de la seccion
 
         /// <summary>
-        /// Lo que faltaba: que el ancho nuevo de la celda llegue de verdad a la fila de
-        /// banderitas. Poner la celda a 1440 no basta —lo probado el 18-sep—, porque la
-        /// seccion y sus hijos siguen midiendo lo de antes, y sobre todo porque **quien
-        /// aplasta las banderitas no es la falta de sitio, es el propio layout de la fila**:
+        /// Que el ancho nuevo de la celda llegue de verdad al contenido. Aqui hay DOS
+        /// problemas encadenados, y se descubrieron uno detras de otro, cada uno tapando al
+        /// siguiente. Los dos estan resueltos midiendo, no adivinando: la traza de esta misma
+        /// clase es la que los canto.
+        ///
+        /// **1. Las banderitas aplastadas: `childControlWidth`.**
+        /// La cuenta de los 642 px lleva a pensar que faltaba sitio, y no era eso.
         /// `subclanVictoryLayout` es un `HorizontalLayoutGroup` con `childControlWidth=True`,
-        /// y con esa bandera el layout DECIDE el ancho de cada hijo y lo reparte entre los
-        /// doce. Por ancha que se ponga la seccion, mientras esa bandera siga puesta el
-        /// reparto manda.
+        /// y con esa bandera puesta el layout **decide** el ancho de cada hijo y lo reparte
+        /// entre los doce: por ancha que se ponga la seccion, las banderitas se quedan a ~24
+        /// px. Quitandola, cada una recupera sus 48 y la fila pide sus 642 honestos.
         ///
-        /// Asi que se tiran tres palancas a la vez, de fuera hacia dentro, porque cual de las
-        /// tres gobierna depende de componentes que solo se ven en la traza:
+        /// **2. La media hoja en blanco: `ignoreLayout` en el contenedor.**
+        /// Con la celda ya a 1440 y la seccion tambien, el dibujo seguia ocupando 711 px
+        /// pegados a la izquierda. El motivo, en la traza: el `LayoutElement` de
+        /// `Subclan victory container` viene del juego con **`ignoreLayout = True`**, asi que
+        /// el `HorizontalLayoutGroup` de la seccion **no lo cuenta**: solo coloca
+        /// `Main class section` (582) y `Card mastery meter` (105), que con los 24 de
+        /// separacion suman exactamente 711. El contenedor flotaba aparte, anclado, y por eso
+        /// ensancharlo a mano no movia nada.
         ///
-        ///   1. la seccion se estira a la celda, y se le quita el `ContentSizeFitter`
-        ///      horizontal si lo lleva (es lo que volveria a dejarla en 710);
-        ///   2. al contenedor de aliados y a sus dos filas se les pone un `LayoutElement`
-        ///      con el `preferredWidth` que necesitan, por si es el layout de la seccion
-        ///      quien reparte;
-        ///   3. y a las dos filas se les quita `childControlWidth` y `childForceExpandWidth`,
-        ///      que es la palanca que de verdad devuelve a cada banderita sus 48 px.
+        /// Esto es de diseno del juego: con la celda original de 710 el banner de aliados se
+        /// solapa encima del retrato a proposito. Con una sola columna sobra sitio, asi que se
+        /// mete en la fila (`ignoreLayout = false`) y las tres partes se reparten de verdad:
+        /// 582 + 24 + 658 + 24 + 105 = **1393** de los 1440. Lo que sobra se lo queda el
+        /// contenedor con `flexibleWidth = 1`.
         ///
-        /// Ninguna toca la jerarquia. Todas se apagan con `WidenSections` y `FreeFlagWidth`.
+        /// Ninguna de las dos toca la jerarquia. Se apagan con `FreeFlagWidth`,
+        /// `WidenSections` y `ContainerInFlow`.
         /// </summary>
         static void Ensanchar(float anchoCelda)
         {
-            if (!WidenSections && !FreeFlagWidth) return;
             if (anchoCelda <= 1f) return;
+            if (!WidenSections && !FreeFlagWidth && !ContainerInFlow) return;
 
             foreach (var s in secciones)
             {
@@ -222,33 +231,51 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     FijarAncho(seccion, anchoCelda);
                 }
 
-                // El contenedor de aliados: se estira hasta el borde derecho de la celda,
-                // descontando lo que ocupa a su izquierda y un margen.
                 foreach (Transform h in seccion)
                 {
                     if (!h.name.Contains("victory container")) continue;
-                    float margenIzq = h is RectTransform c ? c.anchoredPosition.x : 0f;
-                    float disponible = Mathf.Max(100f, anchoCelda - Mathf.Abs(margenIzq) - 24f);
 
-                    if (WidenSections && h is RectTransform cont)
+                    // Primero las filas: de ellas sale lo que el contenedor tiene que pedir.
+                    float pideFila = 0f;
+                    foreach (Transform f in h) pideFila = Mathf.Max(pideFila, Fila(f));
+
+                    if (ContainerInFlow && pideFila > 1f)
                     {
-                        SoltarAjustador(cont);
-                        PreferirAncho(cont, disponible);
-                        FijarAncho(cont, disponible);
+                        // El ancho propio del contenedor: lo que pide la fila mas ancha, mas
+                        // el relleno de su VerticalLayoutGroup (el juego usa 16).
+                        float propio = Mathf.Min(pideFila + 16f, anchoCelda - 24f);
+                        EnFila(h, propio);
                     }
-
-                    foreach (Transform f in h) Fila(f, disponible);
                     break;
                 }
             }
         }
 
-        /// <summary>Una de las dos filas de banderitas.</summary>
-        static void Fila(Transform fila, float disponible)
+        /// <summary>
+        /// Mete el contenedor de aliados en la fila de la seccion y le da el ancho que pide,
+        /// dejandole ademas el sobrante (`flexibleWidth = 1`) para que no quede hueco.
+        /// </summary>
+        static void EnFila(Transform contenedor, float ancho)
         {
-            var grupo = Componente(fila, "HorizontalLayoutGroup");
+            var le = LayoutElementDe(contenedor);
+            if (le == null) return;
+            try
+            {
+                var t = le.GetType();
+                t.GetProperty("ignoreLayout")?.SetValue(le, false, null);
+                t.GetProperty("preferredWidth")?.SetValue(le, ancho, null);
+                t.GetProperty("minWidth")?.SetValue(le, ancho, null);
+                t.GetProperty("flexibleWidth")?.SetValue(le, 1f, null);
+            }
+            catch (Exception e) { Log($"no se pudo meter en fila {contenedor.name}: {e.Message}", true); }
+        }
 
-            // Cuantas banderitas hay y cuanto miden de verdad.
+        /// <summary>
+        /// Una de las dos filas de banderitas. Devuelve lo que pide de ancho, que es lo que
+        /// necesita saber el contenedor.
+        /// </summary>
+        static float Fila(Transform fila)
+        {
             int n = 0; float lado = 0f;
             foreach (Transform b in fila)
             {
@@ -256,25 +283,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 n++;
                 if (b is RectTransform rb && rb.rect.width > lado) lado = rb.rect.width;
             }
-            if (n == 0) return;
+            if (n == 0) return 0f;
             if (lado <= 1f) lado = 48f;
 
-            if (FreeFlagWidth && grupo != null)
+            if (FreeFlagWidth && Componente(fila, "HorizontalLayoutGroup") is Component grupo)
             {
-                // LA palanca. Sin esto, lo demas no sirve de nada.
+                // LA palanca de las banderitas. Sin esto, ensanchar no sirve de nada.
                 PonerBool(grupo, "childControlWidth", false);
                 PonerBool(grupo, "childForceExpandWidth", false);
             }
 
             float pide = n * lado + (n - 1) * FlagSpacing;
-            float ancho = Mathf.Min(pide, disponible);
-
-            if (WidenSections && fila is RectTransform rf)
-            {
-                SoltarAjustador(rf);
-                PreferirAncho(rf, ancho);
-                FijarAncho(rf, ancho);
-            }
+            if (WidenSections) PreferirAncho(fila, pide);
+            return pide;
         }
 
         // ------------------------------------------------------------------ paginacion
@@ -420,25 +441,37 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             catch (Exception e) { Log($"no se pudo soltar el ajustador de {t.name}: {e.Message}", true); }
         }
 
+        /// <summary>El `LayoutElement` del objeto, creandolo si no lo lleva.</summary>
+        static Component? LayoutElementDe(Transform t)
+        {
+            var le = Componente(t, "LayoutElement");
+            if (le != null) return le;
+            try
+            {
+                var tipo = AccessTools.TypeByName("UnityEngine.UI.LayoutElement");
+                return tipo == null ? null : t.gameObject.AddComponent(tipo);
+            }
+            catch (Exception e)
+            {
+                Log($"no se pudo anadir LayoutElement a {t.name}: {e.Message}", true);
+                return null;
+            }
+        }
+
         /// <summary>
-        /// `LayoutElement.preferredWidth`, creando el componente si no lo lleva: es lo que
-        /// mira el layout del padre cuando es el quien reparte el ancho.
+        /// `LayoutElement.preferredWidth`: es lo que mira el layout del padre cuando es el
+        /// quien reparte el ancho.
         /// </summary>
         static void PreferirAncho(Transform t, float ancho)
         {
+            var le = LayoutElementDe(t);
+            if (le == null) return;
             try
             {
-                var le = Componente(t, "LayoutElement");
-                if (le == null)
-                {
-                    var tipo = AccessTools.TypeByName("UnityEngine.UI.LayoutElement");
-                    if (tipo == null) return;
-                    le = t.gameObject.AddComponent(tipo);
-                    if (le == null) return;
-                }
-                le.GetType().GetProperty("preferredWidth")?.SetValue(le, ancho, null);
-                le.GetType().GetProperty("minWidth")?.SetValue(le, ancho, null);
-                le.GetType().GetProperty("flexibleWidth")?.SetValue(le, 0f, null);
+                var tipo = le.GetType();
+                tipo.GetProperty("preferredWidth")?.SetValue(le, ancho, null);
+                tipo.GetProperty("minWidth")?.SetValue(le, ancho, null);
+                tipo.GetProperty("flexibleWidth")?.SetValue(le, 0f, null);
             }
             catch (Exception e) { Log($"no se pudo fijar el ancho de {t.name}: {e.Message}", true); }
         }
