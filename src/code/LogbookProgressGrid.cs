@@ -51,6 +51,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static int RowsPerPage = 0;    // filas por hoja; 0 = las que quepan de alto
         public static bool Verbose = true;
         public static int DetailSections = 1; // secciones que se vuelcan con todo el detalle
+        public static bool WidenSections = true; // estirar seccion y contenedor de aliados
+        public static bool FreeFlagWidth = true; // soltar el ancho de las banderitas
+        public static float FlagSpacing = 6f;    // separacion entre banderitas al recolocarlas
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -107,6 +110,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (pagina == null) yield break;
                 Ajustar();
             }
+            // La traza se toma AQUI, no en la primera pasada: en la primera, el layout
+            // todavia no ha rehecho nada y la seccion sigue diciendo el ancho de antes.
+            Trazar();
         }
 
         /// <summary>
@@ -156,7 +162,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
                 subpagina = Mathf.Clamp(subpagina, 0, subpaginas - 1);
                 Pintar();
-                Trazar(layout, rejilla, ancho, alto);
+                Ensanchar(anchoCelda);
             }
             catch (Exception e)
             {
@@ -173,6 +179,101 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (c == null) continue;
                 bool visible = subpaginas <= 1 || (i / porHoja) == subpagina;
                 if (c.gameObject.activeSelf != visible) c.gameObject.SetActive(visible);
+            }
+        }
+
+        // ------------------------------------------------------------- ancho de la seccion
+
+        /// <summary>
+        /// Lo que faltaba: que el ancho nuevo de la celda llegue de verdad a la fila de
+        /// banderitas. Poner la celda a 1440 no basta —lo probado el 18-sep—, porque la
+        /// seccion y sus hijos siguen midiendo lo de antes, y sobre todo porque **quien
+        /// aplasta las banderitas no es la falta de sitio, es el propio layout de la fila**:
+        /// `subclanVictoryLayout` es un `HorizontalLayoutGroup` con `childControlWidth=True`,
+        /// y con esa bandera el layout DECIDE el ancho de cada hijo y lo reparte entre los
+        /// doce. Por ancha que se ponga la seccion, mientras esa bandera siga puesta el
+        /// reparto manda.
+        ///
+        /// Asi que se tiran tres palancas a la vez, de fuera hacia dentro, porque cual de las
+        /// tres gobierna depende de componentes que solo se ven en la traza:
+        ///
+        ///   1. la seccion se estira a la celda, y se le quita el `ContentSizeFitter`
+        ///      horizontal si lo lleva (es lo que volveria a dejarla en 710);
+        ///   2. al contenedor de aliados y a sus dos filas se les pone un `LayoutElement`
+        ///      con el `preferredWidth` que necesitan, por si es el layout de la seccion
+        ///      quien reparte;
+        ///   3. y a las dos filas se les quita `childControlWidth` y `childForceExpandWidth`,
+        ///      que es la palanca que de verdad devuelve a cada banderita sus 48 px.
+        ///
+        /// Ninguna toca la jerarquia. Todas se apagan con `WidenSections` y `FreeFlagWidth`.
+        /// </summary>
+        static void Ensanchar(float anchoCelda)
+        {
+            if (!WidenSections && !FreeFlagWidth) return;
+            if (anchoCelda <= 1f) return;
+
+            foreach (var s in secciones)
+            {
+                if (s == null || s.transform is not RectTransform seccion) continue;
+
+                if (WidenSections)
+                {
+                    SoltarAjustador(seccion);
+                    FijarAncho(seccion, anchoCelda);
+                }
+
+                // El contenedor de aliados: se estira hasta el borde derecho de la celda,
+                // descontando lo que ocupa a su izquierda y un margen.
+                foreach (Transform h in seccion)
+                {
+                    if (!h.name.Contains("victory container")) continue;
+                    float margenIzq = h is RectTransform c ? c.anchoredPosition.x : 0f;
+                    float disponible = Mathf.Max(100f, anchoCelda - Mathf.Abs(margenIzq) - 24f);
+
+                    if (WidenSections && h is RectTransform cont)
+                    {
+                        SoltarAjustador(cont);
+                        PreferirAncho(cont, disponible);
+                        FijarAncho(cont, disponible);
+                    }
+
+                    foreach (Transform f in h) Fila(f, disponible);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Una de las dos filas de banderitas.</summary>
+        static void Fila(Transform fila, float disponible)
+        {
+            var grupo = Componente(fila, "HorizontalLayoutGroup");
+
+            // Cuantas banderitas hay y cuanto miden de verdad.
+            int n = 0; float lado = 0f;
+            foreach (Transform b in fila)
+            {
+                if (!b.gameObject.activeSelf) continue;
+                n++;
+                if (b is RectTransform rb && rb.rect.width > lado) lado = rb.rect.width;
+            }
+            if (n == 0) return;
+            if (lado <= 1f) lado = 48f;
+
+            if (FreeFlagWidth && grupo != null)
+            {
+                // LA palanca. Sin esto, lo demas no sirve de nada.
+                PonerBool(grupo, "childControlWidth", false);
+                PonerBool(grupo, "childForceExpandWidth", false);
+            }
+
+            float pide = n * lado + (n - 1) * FlagSpacing;
+            float ancho = Mathf.Min(pide, disponible);
+
+            if (WidenSections && fila is RectTransform rf)
+            {
+                SoltarAjustador(rf);
+                PreferirAncho(rf, ancho);
+                FijarAncho(rf, ancho);
             }
         }
 
@@ -271,21 +372,92 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             catch (Exception e) { Log($"no se pudo poner {propiedad}: {e.Message}", true); }
         }
 
-        /// <summary>Una vez por sesion, el detalle de lo que hay montado.</summary>
-        static void Trazar(Component layout, Component rejilla, float ancho, float alto)
+        /// <summary>Un componente del objeto, buscado por nombre de tipo.</summary>
+        static Component? Componente(Transform t, string nombreTipo)
         {
-            if (trazado || !Verbose) return;
-            trazado = true;
+            foreach (var c in t.GetComponents<Component>())
+                if (c != null && c.GetType().Name.Contains(nombreTipo)) return c;
+            return null;
+        }
 
-            Log($"rejilla \"{layout.name}\" {ancho:0}x{alto:0}, celda {LeerVector(rejilla, "cellSize")}, " +
-                $"hueco {LeerVector(rejilla, "spacing")}");
-            if (FLayoutIniciales?.GetValue(hoja) is Component otro)
-                Log($"layout de clanes iniciales (apagado): \"{otro.name}\"");
+        static void PonerBool(Component c, string propiedad, bool valor)
+        {
+            try { c.GetType().GetProperty(propiedad)?.SetValue(c, valor, null); }
+            catch (Exception e) { Log($"no se pudo poner {propiedad}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// Ancho, respetando las anclas. `SetSizeWithCurrentAnchors` es lo unico que se porta
+        /// igual con anclas fijas y con anclas estiradas.
+        /// </summary>
+        static void FijarAncho(RectTransform rt, float ancho)
+        {
+            try
+            {
+                if (Mathf.Abs(rt.rect.width - ancho) < 0.5f) return;
+                rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, ancho);
+            }
+            catch (Exception e) { Log($"no se pudo estirar {rt.name}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// Un `ContentSizeFitter` horizontal vuelve a imponer el ancho de antes en cuanto el
+        /// layout corre otra vez, asi que se deja en Unconstrained (0).
+        /// </summary>
+        static void SoltarAjustador(Transform t)
+        {
+            var f = Componente(t, "ContentSizeFitter");
+            if (f == null) return;
+            try
+            {
+                var prop = f.GetType().GetProperty("horizontalFit");
+                if (prop == null) return;
+                var actual = prop.GetValue(f, null);
+                if (actual != null && Convert.ToInt32(actual) == 0) return;
+                prop.SetValue(f, Enum.ToObject(prop.PropertyType, 0), null);
+                Log($"ajustador horizontal de \"{t.name}\" a Unconstrained");
+            }
+            catch (Exception e) { Log($"no se pudo soltar el ajustador de {t.name}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// `LayoutElement.preferredWidth`, creando el componente si no lo lleva: es lo que
+        /// mira el layout del padre cuando es el quien reparte el ancho.
+        /// </summary>
+        static void PreferirAncho(Transform t, float ancho)
+        {
+            try
+            {
+                var le = Componente(t, "LayoutElement");
+                if (le == null)
+                {
+                    var tipo = AccessTools.TypeByName("UnityEngine.UI.LayoutElement");
+                    if (tipo == null) return;
+                    le = t.gameObject.AddComponent(tipo);
+                    if (le == null) return;
+                }
+                le.GetType().GetProperty("preferredWidth")?.SetValue(le, ancho, null);
+                le.GetType().GetProperty("minWidth")?.SetValue(le, ancho, null);
+                le.GetType().GetProperty("flexibleWidth")?.SetValue(le, 0f, null);
+            }
+            catch (Exception e) { Log($"no se pudo fijar el ancho de {t.name}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// Una vez por sesion y con el layout ya resuelto: quien decide los anchos dentro de
+        /// una seccion. Es lo que falta para poder estirar el contenedor de aliados.
+        /// </summary>
+        static void Trazar()
+        {
+            if (trazado || !Verbose || hoja == null) return;
+            trazado = true;
 
             int n = 0;
             foreach (var s in secciones)
             {
                 n++;
+                if (n > DetailSections) continue;
+
                 string clan = "?";
                 try
                 {
@@ -294,25 +466,48 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
                 catch { }
 
-                if (n > DetailSections) continue;
-                Log($"  seccion {n}: {clan}{Medidas(s.transform)}");
-                foreach (var (nombre, campo) in new[] { ("normales", FFila), ("tripulacion", FFilaCrew) })
+                Log($"  seccion {n}: {clan}{Medidas(s.transform)}{Componentes(s.transform)}");
+                foreach (Transform h in s.transform)
                 {
-                    if (campo?.GetValue(s) is not Component fila) continue;
-                    int hijos = 0;
-                    float anchoHijo = 0f;
-                    foreach (Transform h in fila.transform)
-                    {
-                        hijos++;
-                        if (anchoHijo <= 0f && h is RectTransform hrt) anchoHijo = hrt.rect.width;
-                    }
-                    Log($"    fila {nombre}:{Medidas(fila.transform)} {hijos} banderitas de {anchoHijo:0} px");
+                    Log($"    parte \"{h.name}\"{Medidas(h)}{Componentes(h)}");
+                    // Un nivel mas dentro del contenedor de aliados, que es lo que hay que
+                    // ensanchar: ahi viven las dos filas de banderitas.
+                    if (!h.name.Contains("victory container")) continue;
+                    foreach (Transform f in h)
+                        Log($"      fila \"{f.name}\"{Medidas(f)}{Componentes(f)}");
                 }
-                var partes = new StringBuilder();
-                foreach (Transform h in s.transform) partes.Append($" [{h.name}{Medidas(h)}]");
-                Log($"    partes:{partes}");
             }
-            Log($"total {n} secciones");
+            Log($"total {secciones.Count} secciones, {porHoja} por hoja, {subpaginas} sub-paginas");
+        }
+
+        /// <summary>
+        /// Los componentes que mandan en el tamano: layouts, ajustadores y LayoutElement.
+        /// Por reflexion, para no referenciar UnityEngine.UI.
+        /// </summary>
+        static string Componentes(Transform t)
+        {
+            var sb = new StringBuilder();
+            foreach (var c in t.GetComponents<Component>())
+            {
+                if (c == null) continue;
+                var tipo = c.GetType();
+                var nombre = tipo.Name;
+                if (!nombre.Contains("LayoutGroup") && !nombre.Contains("LayoutElement")
+                    && !nombre.Contains("ContentSizeFitter")) continue;
+
+                sb.Append(' ').Append(nombre).Append('(');
+                foreach (var prop in new[] { "spacing", "cellSize", "childForceExpandWidth",
+                                             "childControlWidth", "childAlignment",
+                                             "preferredWidth", "minWidth", "flexibleWidth",
+                                             "ignoreLayout", "horizontalFit" })
+                {
+                    object? v = null;
+                    try { v = tipo.GetProperty(prop)?.GetValue(c, null); } catch { }
+                    if (v != null) sb.Append(prop).Append('=').Append(v).Append(' ');
+                }
+                sb.Append(')');
+            }
+            return sb.ToString();
         }
 
         static string Medidas(Transform? t) =>

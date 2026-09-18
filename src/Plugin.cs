@@ -104,12 +104,24 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgDetalle = Config.Bind(
                 "ProgressGrid", "DetailSections", 1,
                 "Cuantas secciones de clan se vuelcan con todo el detalle.");
+            var cfgProgEnsanchar = Config.Bind(
+                "ProgressGrid", "WidenSections", true,
+                "Estira la seccion de clan y el contenedor de aliados hasta el ancho nuevo de la celda. A false, la celda se ensancha pero dentro todo sigue pegado a la izquierda.");
+            var cfgProgSoltar = Config.Bind(
+                "ProgressGrid", "FreeFlagWidth", true,
+                "Quita childControlWidth a las dos filas de banderitas: es lo que hace que cada una recupere sus 48 px en vez de repartirse el ancho de la fila.");
+            var cfgProgSeparacion = Config.Bind(
+                "ProgressGrid", "FlagSpacing", 6f,
+                "Separacion entre banderitas al calcular lo que pide la fila. La del juego son 6 px.");
 
             LogbookProgressGrid.Enabled = cfgProgActivo.Value;
             LogbookProgressGrid.Columns = cfgProgColumnas.Value;
             LogbookProgressGrid.RowsPerPage = cfgProgFilas.Value;
             LogbookProgressGrid.Verbose = cfgProgTraza.Value;
             LogbookProgressGrid.DetailSections = cfgProgDetalle.Value;
+            LogbookProgressGrid.WidenSections = cfgProgEnsanchar.Value;
+            LogbookProgressGrid.FreeFlagWidth = cfgProgSoltar.Value;
+            LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 
