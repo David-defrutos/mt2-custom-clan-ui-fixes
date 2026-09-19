@@ -68,6 +68,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static string Layout = "inflow";
         public static float PlaqueWidth = 0f;        // 0 = lo que sobre; >0 = fijo
         public static bool StretchPlaqueFill = true; // estirar la franja de color de la placa
+        public static bool DumpTree = true;          // volcar el arbol de la primera seccion
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -176,6 +177,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
                 subpagina = Mathf.Clamp(subpagina, 0, subpaginas - 1);
                 Pintar();
+                Volcar();
                 Ensanchar(anchoCelda);
             }
             catch (Exception e)
@@ -194,6 +196,49 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 bool visible = subpaginas <= 1 || (i / porHoja) == subpagina;
                 if (c.gameObject.activeSelf != visible) c.gameObject.SetActive(visible);
             }
+        }
+
+        // ------------------------------------------------------------------ volcado
+
+        static bool volcado;
+
+        /// <summary>
+        /// El arbol entero de la primera seccion, una vez por sesion: nombre, ancho, y si el
+        /// objeto **pinta** algo (`Image`, `RawImage`, texto). Tres rondas seguidas se ha
+        /// intentado ensanchar "la barra de color" apuntando al objeto equivocado —primero la
+        /// seccion, luego el contenedor, luego `Level section`, que resulto medir 212 px y ser
+        /// solo el texto—, asi que aqui se mira la jerarquia entera de una vez en vez de ir
+        /// adivinando nombres de uno en uno.
+        /// </summary>
+        static void Volcar()
+        {
+            if (volcado || !DumpTree || !Verbose) return;
+            if (secciones.Count == 0 || secciones[0] == null) return;
+            volcado = true;
+
+            Log("---- arbol de la primera seccion ----");
+            VolcarRama(secciones[0].transform, 0);
+            Log("---- fin del arbol ----");
+        }
+
+        static void VolcarRama(Transform t, int nivel)
+        {
+            if (nivel > 5) return;
+
+            string pinta = "";
+            foreach (var c in t.GetComponents<Component>())
+            {
+                if (c == null) continue;
+                var n = c.GetType().Name;
+                if (n.Contains("Image") || n.Contains("Text") || n.Contains("Sprite")
+                    || n.Contains("Mask") || n.Contains("Canvas"))
+                    pinta += " " + n;
+            }
+
+            Log($"{new string(' ', nivel * 2)}[{nivel}] \"{t.name}\"" +
+                $"{(t.gameObject.activeSelf ? "" : " (apagado)")}{Medidas(t)}{pinta}");
+
+            foreach (Transform h in t) VolcarRama(h, nivel + 1);
         }
 
         // ------------------------------------------------------------- ancho de la seccion
