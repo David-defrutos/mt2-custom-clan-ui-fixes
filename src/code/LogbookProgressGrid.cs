@@ -459,7 +459,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
             if (cinta is not RectTransform rc) return;
 
-            float anchoViejo = rc.rect.width;
+            float anchoViejo = Original(rc, rc.rect.width);
 
             // El destino **se mide, no se calcula**. La cuenta (placa + hueco + contenedor +
             // hueco) daba 1076 y el medidor de cartas esta de verdad en ~1465: la seccion no
@@ -474,7 +474,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             float calculado = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
             float medido = DistanciaHasta(seccion, rc, medidor);
             float objetivo = Mathf.Max(calculado, medido) + RibbonExtra;
-            if (anchoViejo <= 1f || Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
+            if (anchoViejo <= 1f || objetivo <= 1f) return;
             float crece = objetivo - anchoViejo;
 
             PonerIgnoreLayout(cinta, true);
@@ -540,18 +540,24 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
                 if (h.name.Contains("Edge"))
                 {
+                    // La punta no se estira: se lleva al extremo. Y se mueve desde su sitio
+                    // original, no desde donde este ahora, para no ir empujandola cada pasada.
+                    if (!xOriginal.TryGetValue(h, out float x0)) { x0 = rt.localPosition.x; xOriginal[h] = x0; }
                     var q = rt.localPosition;
-                    q.x += crece;
+                    q.x = x0 + crece;
                     rt.localPosition = q;
                     n++;
                     continue;
                 }
 
-                // Margen de 24 px para que entren los filetes (354 de una cinta de 370).
-                float falta = anchoViejo - rt.rect.width;
+                // Se mira el ancho ORIGINAL de la pieza, no el de ahora: las que ya estiramos
+                // en una pasada anterior dejarian de reconocerse. Margen de 24 px para que
+                // entren los filetes, que van 354 en una cinta de 370.
+                float mio = Original(h, rt.rect.width);
+                float falta = anchoViejo - mio;
                 if (falta >= -1f && falta <= 24f)
                 {
-                    EstirarManteniendoIzquierda(rt, rt.rect.width + crece);
+                    EstirarManteniendoIzquierda(rt, mio + crece);
                     n++;
                 }
                 n += EstirarDentro(h, anchoViejo, crece, nivel + 1);
@@ -617,7 +623,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
         // --------------------------------------------------------- reparto de banderitas
 
-        // Lo que hemos movido nosotros, para poder devolverlo antes de que el juego toque.
+        // El ancho que tenia cada pieza ANTES de que la tocaramos. Sin esto no hay forma de
+        // ser idempotente: el layout devuelve la cinta a 370 en cada pasada pero a sus hijos
+        // no, asi que comparar con "el ancho de antes" reconoce unas piezas y otras no, y el
+        // dibujo queda a medias. Con la medida original guardada, cada pasada calcula el
+        // mismo destino absoluto y da igual cuantas veces se repita.
+        static readonly Dictionary<Transform, float> anchoOriginal = new();
+        static readonly Dictionary<Transform, float> xOriginal = new();
+
+        static float Original(Transform t, float ahora)
+        {
+            if (!anchoOriginal.TryGetValue(t, out float v)) { v = ahora; anchoOriginal[t] = v; }
+            return v;
+        }
+
+                // Lo que hemos movido nosotros, para poder devolverlo antes de que el juego toque.
         static readonly Dictionary<Transform, Transform> devolverA = new();
 
         /// <summary>
