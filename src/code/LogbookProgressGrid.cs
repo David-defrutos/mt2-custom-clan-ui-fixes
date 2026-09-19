@@ -397,19 +397,62 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             if (hijos[hijos.Count - 1] is not RectTransform franja) return;
             float objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
-            if (Mathf.Abs(franja.rect.width - objetivo) < 0.5f) return;
+            float anchoViejo = franja.rect.width;
+            if (Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
 
             PonerIgnoreLayout(franja, true);
+            EstirarManteniendoIzquierda(franja, objetivo);
 
-            float izquierda = franja.localPosition.x - franja.rect.width * franja.pivot.x;
-            FijarAncho(franja, objetivo);
-            float ahora = franja.localPosition.x - franja.rect.width * franja.pivot.x;
+            // Y lo de dentro. "Level section" no es la barra: es una caja con el nombre, el
+            // nivel y, debajo, la imagen de color. Ensanchar la caja no ensancha la imagen,
+            // que es exactamente el mismo problema un nivel mas abajo.
+            //
+            // En vez de adivinar como se llama, la regla es: **lo que ocupaba todo el ancho
+            // viejo tiene que ocupar todo el nuevo**. Eso coge los fondos y deja en paz los
+            // textos y los iconos, que miden otra cosa.
+            int tocados = EstirarLoQueAbarcaba(franja, anchoViejo, objetivo, 0);
 
-            var p = franja.localPosition;
+            Log($"franja \"{franja.name}\" {anchoViejo:0} -> {objetivo:0} px " +
+                $"(placa {anchoPlaca:0}, sobresale {sobresale:0}, {tocados} hijo(s) detras)");
+        }
+
+        /// <summary>
+        /// Cambia el ancho dejando el borde izquierdo donde estaba. Hace falta porque, fuera
+        /// del layout, crecer con el pivote centrado se lleva media franja hacia la izquierda.
+        /// </summary>
+        static void EstirarManteniendoIzquierda(RectTransform rt, float ancho)
+        {
+            float izquierda = rt.localPosition.x - rt.rect.width * rt.pivot.x;
+            FijarAncho(rt, ancho);
+            float ahora = rt.localPosition.x - rt.rect.width * rt.pivot.x;
+
+            var p = rt.localPosition;
             p.x += izquierda - ahora;
-            franja.localPosition = p;
+            rt.localPosition = p;
+        }
 
-            Log($"franja \"{franja.name}\" a {objetivo:0} px (placa {anchoPlaca:0}, sobresale {sobresale:0})");
+        /// <summary>
+        /// Baja por el arbol estirando todo lo que medía el ancho viejo, que es como se
+        /// reconocen los fondos sin saber como se llaman. Devuelve cuantos ha tocado.
+        /// </summary>
+        static int EstirarLoQueAbarcaba(Transform padre, float anchoViejo, float anchoNuevo, int nivel)
+        {
+            if (nivel > 3 || anchoViejo <= 1f) return 0;
+            int n = 0;
+            foreach (Transform h in padre)
+            {
+                if (!h.gameObject.activeSelf || h is not RectTransform rt) continue;
+                if (Mathf.Abs(rt.rect.width - anchoViejo) > 2f)
+                {
+                    n += EstirarLoQueAbarcaba(h, anchoViejo, anchoNuevo, nivel + 1);
+                    continue;
+                }
+                PonerIgnoreLayout(h, true);
+                EstirarManteniendoIzquierda(rt, anchoNuevo);
+                n++;
+                n += EstirarLoQueAbarcaba(h, anchoViejo, anchoNuevo, nivel + 1);
+            }
+            return n;
         }
 
         static void PonerIgnoreLayout(Transform t, bool valor)
@@ -671,8 +714,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     if (!h.name.Contains("victory container") && !h.name.Contains("Main class section"))
                         continue;
                     foreach (Transform f in h)
+                    {
                         Log($"      hijo \"{f.name}\"{(f.gameObject.activeSelf ? "" : " (apagado)")}" +
                             $"{Medidas(f)}{Componentes(f)}");
+                        foreach (Transform n2 in f)
+                            Log($"        nieto \"{n2.name}\"{(n2.gameObject.activeSelf ? "" : " (apagado)")}" +
+                                $"{Medidas(n2)}{Componentes(n2)}");
+                    }
                 }
             }
             Log($"total {secciones.Count} secciones, {porHoja} por hoja, {subpaginas} sub-paginas");
