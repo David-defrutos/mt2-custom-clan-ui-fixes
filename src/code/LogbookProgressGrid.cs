@@ -58,11 +58,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// Como se reparte el ancho dentro de la seccion:
         ///   "overlay" (por defecto) — como lo dibuja el juego pero ancho: la placa de color
         ///                             se estira y las banderitas siguen encima de ella;
-        ///   "inflow"                — el contenedor de aliados entra en la fila y la placa
-        ///                             se estrecha a `PlaqueWidth`, porque se queda vacia.
+        ///   "inflow" (por defecto) — el contenedor de aliados entra en la fila, y la placa
+        ///                            se queda todo lo que sobra, asi que su franja de color
+        ///                            llega hasta las banderitas;
+        ///   "overlay"              — se intento respetar el diseno del juego ensanchando la
+        ///                            placa con las banderitas encima. **Descartado**: ver
+        ///                            `Ensanchar`.
         /// </summary>
-        public static string Layout = "overlay";
-        public static float PlaqueWidth = 370f;  // ancho de la placa en modo "inflow"
+        public static string Layout = "inflow";
+        public static float PlaqueWidth = 0f;        // 0 = lo que sobre; >0 = fijo
+        public static bool StretchPlaqueFill = true; // estirar la franja de color de la placa
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -294,22 +299,38 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
                 else
                 {
-                    // --- Modo "inflow": el contenedor entra en la fila y la placa se
-                    // estrecha a lo que ocupa el retrato, porque se queda sin banderitas.
+                    // --- Modo "inflow": el contenedor de aliados entra en la fila, pega las
+                    // banderitas a su sitio sin holgura, y **la placa se queda todo lo que
+                    // sobra**, asi que su franja de color llega hasta las banderitas.
+                    EnFila(contenedor, pideContenedor);
+
                     if (placa != null)
                     {
+                        float anchoPlaca = PlaqueWidth > 0f
+                            ? PlaqueWidth
+                            : Mathf.Max(200f, anchoCelda - pideContenedor - anchoMedidor - hueco * 2f);
+
                         SoltarAjustador(placa);
-                        PreferirAncho(placa, Mathf.Max(100f, PlaqueWidth));
-                        FijarAncho(placa, Mathf.Max(100f, PlaqueWidth));
+                        PreferirAncho(placa, anchoPlaca);
+                        PonerFlexible(placa, 1f);   // y lo que quede suelto, tambien para ella
+                        FijarAncho(placa, anchoPlaca);
+
+                        // El fondo de color es un hijo de la placa y, con
+                        // `childControlWidth=True`, el layout le da su ancho PREFERIDO: se
+                        // encoge con la placa pero no crece con ella. Para que la franja
+                        // llegue de verdad hasta las banderitas hay que darle holgura al
+                        // ultimo hijo, que es el que la pinta.
+                        if (StretchPlaqueFill) EstirarUltimoHijo(placa);
                     }
-                    EnFila(contenedor, Mathf.Min(pideContenedor, anchoCelda - hueco));
                 }
             }
         }
 
         /// <summary>
-        /// Mete el contenedor de aliados en la fila de la seccion y le da el ancho que pide,
-        /// dejandole ademas el sobrante (`flexibleWidth = 1`) para que no quede hueco.
+        /// Mete el contenedor de aliados en la fila de la seccion con el ancho justo que pide
+        /// y **sin holgura** (`flexibleWidth = 0`): el sobrante es para la placa. Con holgura
+        /// aqui, el contenedor se quedaba los ~900 px de la fila y su `VerticalLayoutGroup`
+        /// centraba las banderitas, dejando hueco a los dos lados.
         /// </summary>
         static void EnFila(Transform contenedor, float ancho)
         {
@@ -321,9 +342,29 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 t.GetProperty("ignoreLayout")?.SetValue(le, false, null);
                 t.GetProperty("preferredWidth")?.SetValue(le, ancho, null);
                 t.GetProperty("minWidth")?.SetValue(le, ancho, null);
-                t.GetProperty("flexibleWidth")?.SetValue(le, 1f, null);
+                t.GetProperty("flexibleWidth")?.SetValue(le, 0f, null);
             }
             catch (Exception e) { Log($"no se pudo meter en fila {contenedor.name}: {e.Message}", true); }
+        }
+
+        static void PonerFlexible(Transform t, float valor)
+        {
+            var le = LayoutElementDe(t);
+            if (le == null) return;
+            try { le.GetType().GetProperty("flexibleWidth")?.SetValue(le, valor, null); }
+            catch (Exception e) { Log($"no se pudo dar holgura a {t.name}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// Le da holgura al ultimo hijo activo, que en la placa es la franja de color. Sin
+        /// esto la franja se encoge con la placa pero no crece con ella (`childControlWidth`
+        /// reparte el ancho PREFERIDO, y de ahi no pasa sin `flexibleWidth`).
+        /// </summary>
+        static void EstirarUltimoHijo(Transform padre)
+        {
+            Transform? ultimo = null;
+            foreach (Transform h in padre) if (h.gameObject.activeSelf) ultimo = h;
+            if (ultimo != null) PonerFlexible(ultimo, 1f);
         }
 
         static void PonerIgnoreLayout(Transform t, bool valor)
@@ -580,11 +621,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 foreach (Transform h in s.transform)
                 {
                     Log($"    parte \"{h.name}\"{Medidas(h)}{Componentes(h)}");
-                    // Un nivel mas dentro del contenedor de aliados, que es lo que hay que
-                    // ensanchar: ahi viven las dos filas de banderitas.
-                    if (!h.name.Contains("victory container")) continue;
+                    // Un nivel mas dentro de las dos partes que se tocan: en el contenedor
+                    // viven las filas de banderitas, y en la placa, la franja de color.
+                    if (!h.name.Contains("victory container") && !h.name.Contains("Main class section"))
+                        continue;
                     foreach (Transform f in h)
-                        Log($"      fila \"{f.name}\"{Medidas(f)}{Componentes(f)}");
+                        Log($"      hijo \"{f.name}\"{(f.gameObject.activeSelf ? "" : " (apagado)")}" +
+                            $"{Medidas(f)}{Componentes(f)}");
                 }
             }
             Log($"total {secciones.Count} secciones, {porHoja} por hoja, {subpaginas} sub-paginas");
