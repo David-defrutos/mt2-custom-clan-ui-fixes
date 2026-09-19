@@ -56,8 +56,6 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static float FlagSpacing = 6f;    // separacion entre banderitas
         /// <summary>
         /// Como se reparte el ancho dentro de la seccion:
-        ///   "overlay" (por defecto) — como lo dibuja el juego pero ancho: la placa de color
-        ///                             se estira y las banderitas siguen encima de ella;
         ///   "inflow" (por defecto) — el contenedor de aliados entra en la fila, y la placa
         ///                            se queda todo lo que sobra, asi que su franja de color
         ///                            llega hasta las banderitas;
@@ -429,36 +427,70 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             float huecoPlaca = LeerFloat(Componente(placa, "HorizontalLayoutGroup"), "spacing", 0f);
 
-            var hijos = new List<Transform>();
-            foreach (Transform h in placa) if (h.gameObject.activeSelf) hijos.Add(h);
-            if (hijos.Count == 0) return;
-
+            // La barra es "Clan Ribbon container", hermana del texto y del retrato. Costo tres
+            // rondas dar con ella: se probo con la seccion, con el contenedor de aliados y con
+            // "Level section", que resulto medir 212 px y llevar solo el nombre y el nivel.
+            // Dentro de la cinta van la imagen de color, la mascara con el icono de clan al
+            // fondo, dos filetes y la punta de flecha del final.
+            Transform? cinta = null;
             float antes = 0f;
-            for (int i = 0; i < hijos.Count - 1; i++)
+            foreach (Transform h in placa)
             {
-                antes += hijos[i] is RectTransform r ? r.rect.width : 0f;
-                antes += huecoPlaca;
+                if (!h.gameObject.activeSelf) continue;
+                if (h.name.Contains("Ribbon container")) { cinta = h; break; }
+                antes += (h is RectTransform r ? r.rect.width : 0f) + huecoPlaca;
             }
+            if (cinta is not RectTransform rc) return;
 
-            if (hijos[hijos.Count - 1] is not RectTransform franja) return;
+            float anchoViejo = rc.rect.width;
             float objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
-            float anchoViejo = franja.rect.width;
-            if (Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
+            if (anchoViejo <= 1f || Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
+            float crece = objetivo - anchoViejo;
 
-            PonerIgnoreLayout(franja, true);
-            EstirarManteniendoIzquierda(franja, objetivo);
+            PonerIgnoreLayout(cinta, true);
+            EstirarManteniendoIzquierda(rc, objetivo);
+            int tocados = EstirarDentro(cinta, anchoViejo, crece, 0);
 
-            // Y lo de dentro. "Level section" no es la barra: es una caja con el nombre, el
-            // nivel y, debajo, la imagen de color. Ensanchar la caja no ensancha la imagen,
-            // que es exactamente el mismo problema un nivel mas abajo.
-            //
-            // En vez de adivinar como se llama, la regla es: **lo que ocupaba todo el ancho
-            // viejo tiene que ocupar todo el nuevo**. Eso coge los fondos y deja en paz los
-            // textos y los iconos, que miden otra cosa.
-            int tocados = EstirarLoQueAbarcaba(franja, anchoViejo, objetivo, 0);
+            Log($"cinta \"{cinta.name}\" {anchoViejo:0} -> {objetivo:0} px " +
+                $"(placa {anchoPlaca:0}, antes {antes:0}, sobresale {sobresale:0}, " +
+                $"{tocados} pieza(s) dentro)");
+        }
 
-            Log($"franja \"{franja.name}\" {anchoViejo:0} -> {objetivo:0} px " +
-                $"(placa {anchoPlaca:0}, sobresale {sobresale:0}, {tocados} hijo(s) detras)");
+        /// <summary>
+        /// Las piezas de dentro de la cinta. Crecen **lo mismo** que la cinta, no hasta su
+        /// ancho: asi los filetes, que van 16 px mas estrechos que el fondo, conservan su
+        /// margen en vez de igualarse. Se estira lo que ya abarcaba la cinta entera (el color,
+        /// la mascara, los filetes) y se deja en paz lo que mide otra cosa, como el icono de
+        /// clan del fondo. La punta de flecha no se estira: **se lleva al extremo**, que es lo
+        /// que le corresponde a una punta.
+        /// </summary>
+        static int EstirarDentro(Transform padre, float anchoViejo, float crece, int nivel)
+        {
+            if (nivel > 3 || anchoViejo <= 1f) return 0;
+            int n = 0;
+            foreach (Transform h in padre)
+            {
+                if (!h.gameObject.activeSelf || h is not RectTransform rt) continue;
+
+                if (h.name.Contains("Edge"))
+                {
+                    var q = rt.localPosition;
+                    q.x += crece;
+                    rt.localPosition = q;
+                    n++;
+                    continue;
+                }
+
+                // Margen de 24 px para que entren los filetes (354 de una cinta de 370).
+                float falta = anchoViejo - rt.rect.width;
+                if (falta >= -1f && falta <= 24f)
+                {
+                    EstirarManteniendoIzquierda(rt, rt.rect.width + crece);
+                    n++;
+                }
+                n += EstirarDentro(h, anchoViejo, crece, nivel + 1);
+            }
+            return n;
         }
 
         /// <summary>
@@ -474,66 +506,6 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var p = rt.localPosition;
             p.x += izquierda - ahora;
             rt.localPosition = p;
-        }
-
-        /// <summary>
-        /// Baja por el arbol estirando todo lo que medía el ancho viejo, que es como se
-        /// reconocen los fondos sin saber como se llaman. Devuelve cuantos ha tocado.
-        /// </summary>
-        static int EstirarLoQueAbarcaba(Transform padre, float anchoViejo, float anchoNuevo, int nivel)
-        {
-            if (nivel > 3 || anchoViejo <= 1f) return 0;
-            int n = 0;
-            foreach (Transform h in padre)
-            {
-                if (!h.gameObject.activeSelf || h is not RectTransform rt) continue;
-                if (Mathf.Abs(rt.rect.width - anchoViejo) > 2f)
-                {
-                    n += EstirarLoQueAbarcaba(h, anchoViejo, anchoNuevo, nivel + 1);
-                    continue;
-                }
-                PonerIgnoreLayout(h, true);
-                EstirarManteniendoIzquierda(rt, anchoNuevo);
-                n++;
-                n += EstirarLoQueAbarcaba(h, anchoViejo, anchoNuevo, nivel + 1);
-            }
-            return n;
-        }
-
-        static void PonerIgnoreLayout(Transform t, bool valor)
-        {
-            var le = LayoutElementDe(t);
-            if (le == null) return;
-            try { le.GetType().GetProperty("ignoreLayout")?.SetValue(le, valor, null); }
-            catch (Exception e) { Log($"no se pudo poner ignoreLayout en {t.name}: {e.Message}", true); }
-        }
-
-        /// <summary>
-        /// Una de las dos filas de banderitas. Devuelve lo que pide de ancho, que es lo que
-        /// necesita saber el contenedor.
-        /// </summary>
-        static float Fila(Transform fila)
-        {
-            int n = 0; float lado = 0f;
-            foreach (Transform b in fila)
-            {
-                if (!b.gameObject.activeSelf) continue;
-                n++;
-                if (b is RectTransform rb && rb.rect.width > lado) lado = rb.rect.width;
-            }
-            if (n == 0) return 0f;
-            if (lado <= 1f) lado = 48f;
-
-            if (FreeFlagWidth && Componente(fila, "HorizontalLayoutGroup") is Component grupo)
-            {
-                // LA palanca de las banderitas. Sin esto, ensanchar no sirve de nada.
-                PonerBool(grupo, "childControlWidth", false);
-                PonerBool(grupo, "childForceExpandWidth", false);
-            }
-
-            float pide = n * lado + (n - 1) * FlagSpacing;
-            if (WidenSections) PreferirAncho(fila, pide);
-            return pide;
         }
 
         // ------------------------------------------------------------------ paginacion
