@@ -354,15 +354,38 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
-        /// Le da holgura al ultimo hijo activo, que en la placa es la franja de color. Sin
-        /// esto la franja se encoge con la placa pero no crece con ella (`childControlWidth`
-        /// reparte el ancho PREFERIDO, y de ahi no pasa sin `flexibleWidth`).
+        /// La franja de color: el ultimo hijo de la placa. Se le da un ancho que **se sale de
+        /// la placa** por la derecha, tanto como ocupa el contenedor de aliados, para que la
+        /// barra pase por debajo de las banderitas y llegue al final, que es como lo dibuja el
+        /// juego con pocos clanes.
+        ///
+        /// Puede salirse porque en Unity un hijo no esta recortado por el rect del padre
+        /// mientras no haya mascara; y queda por DEBAJO de las banderitas porque la placa va
+        /// antes que el contenedor en la jerarquia, y ese es el orden en que se dibuja.
+        ///
+        /// El ancho se calcula desde lo que ocupan los hermanos anteriores —el retrato y el
+        /// nombre, que no cambian— y no desde el ancho actual de la franja, para que repetir
+        /// la pasada cinco frames seguidos de el mismo resultado y no la vaya alargando.
         /// </summary>
-        static void EstirarUltimoHijo(Transform padre)
+        static void EstirarFranja(Transform placa, float anchoPlaca, float sobresale)
         {
-            Transform? ultimo = null;
-            foreach (Transform h in padre) if (h.gameObject.activeSelf) ultimo = h;
-            if (ultimo != null) PonerFlexible(ultimo, 1f);
+            float huecoPlaca = LeerFloat(Componente(placa, "HorizontalLayoutGroup"), "spacing", 0f);
+
+            var hijos = new List<Transform>();
+            foreach (Transform h in placa) if (h.gameObject.activeSelf) hijos.Add(h);
+            if (hijos.Count == 0) return;
+
+            float antes = 0f;
+            for (int i = 0; i < hijos.Count - 1; i++)
+            {
+                antes += hijos[i] is RectTransform r ? r.rect.width : 0f;
+                antes += huecoPlaca;
+            }
+
+            var franja = hijos[hijos.Count - 1];
+            float objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
+            PreferirAncho(franja, objetivo);
+            FijarAncho(franja, objetivo);
         }
 
         static void PonerIgnoreLayout(Transform t, bool valor)
