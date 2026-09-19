@@ -315,12 +315,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         PonerFlexible(placa, 1f);   // y lo que quede suelto, tambien para ella
                         FijarAncho(placa, anchoPlaca);
 
-                        // El fondo de color es un hijo de la placa y, con
-                        // `childControlWidth=True`, el layout le da su ancho PREFERIDO: se
-                        // encoge con la placa pero no crece con ella. Para que la franja
-                        // llegue de verdad hasta las banderitas hay que darle holgura al
-                        // ultimo hijo, que es el que la pinta.
-                        if (StretchPlaqueFill) EstirarUltimoHijo(placa);
+                        // Y la franja de color, que es el ultimo hijo de la placa, se estira
+                        // **mas alla de la placa** para que pase por debajo de las banderitas
+                        // y llegue al final, como el banner del juego.
+                        if (StretchPlaqueFill) EstirarFranja(placa, anchoPlaca, pideContenedor + hueco);
                     }
                 }
             }
