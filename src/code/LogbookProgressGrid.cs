@@ -69,6 +69,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool DumpTree = true;          // volcar el arbol de la primera seccion
         public static bool BalanceFlagRows = true;   // repartir las banderitas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
+        public static float RibbonExtra = 0f;        // px de mas para la cinta de color
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -472,7 +473,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             // la mayor, el peor caso es el resultado de la version anterior, nunca peor.
             float calculado = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
             float medido = DistanciaHasta(seccion, rc, medidor);
-            float objetivo = Mathf.Max(calculado, medido);
+            float objetivo = Mathf.Max(calculado, medido) + RibbonExtra;
             if (anchoViejo <= 1f || Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
             float crece = objetivo - anchoViejo;
 
@@ -483,7 +484,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             Log($"cinta \"{cinta.name}\" {anchoViejo:0} -> {objetivo:0} px " +
                 $"(calculado {calculado:0}, medido {medido:0} hasta " +
                 $"\"{(medidor != null ? medidor.name : "?")}\", placa {anchoPlaca:0}, " +
-                $"antes {antes:0}, {tocados} pieza(s) dentro)");
+                $"antes {antes:0}, extra {RibbonExtra:0}, {tocados} pieza(s) dentro)");
         }
 
         static readonly MethodInfo? MReconstruir = AccessTools.Method(

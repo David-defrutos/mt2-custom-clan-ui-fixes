@@ -122,6 +122,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgIzquierda = Config.Bind(
                 "ProgressGrid", "FlagAlignLeft", true,
                 "Pega las banderitas al principio de su fila en vez de centrarlas, para que caigan dentro de la cinta.");
+            var cfgProgExtra = Config.Bind(
+                "ProgressGrid", "RibbonExtra", 0f,
+                "Pixeles de mas para la cinta de color, por encima de lo que se calcula y se mide. Sube esto para que la barra llegue mas a la derecha. Para mover los iconos a la izquierda, baja PlaqueWidth.");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", true,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -145,6 +148,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.DumpTree = cfgProgVolcado.Value;
             LogbookProgressGrid.BalanceFlagRows = cfgProgReparto2.Value;
             LogbookProgressGrid.FlagAlignLeft = cfgProgIzquierda.Value;
+            LogbookProgressGrid.RibbonExtra = cfgProgExtra.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
