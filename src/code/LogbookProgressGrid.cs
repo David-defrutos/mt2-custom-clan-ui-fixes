@@ -508,6 +508,44 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             rt.localPosition = p;
         }
 
+        static void PonerIgnoreLayout(Transform t, bool valor)
+        {
+            var le = LayoutElementDe(t);
+            if (le == null) return;
+            try { le.GetType().GetProperty("ignoreLayout")?.SetValue(le, valor, null); }
+            catch (Exception e) { Log($"no se pudo poner ignoreLayout en {t.name}: {e.Message}", true); }
+        }
+
+        /// <summary>
+        /// Una de las dos filas de banderitas. Devuelve lo que pide de ancho, que es lo que
+        /// necesita saber el contenedor.
+        /// </summary>
+        static float Fila(Transform fila)
+        {
+            int n = 0; float lado = 0f;
+            foreach (Transform b in fila)
+            {
+                if (!b.gameObject.activeSelf) continue;
+                n++;
+                if (b is RectTransform rb && rb.rect.width > lado) lado = rb.rect.width;
+            }
+            if (n == 0) return 0f;
+            if (lado <= 1f) lado = 48f;
+
+            if (FreeFlagWidth && Componente(fila, "HorizontalLayoutGroup") is Component grupo)
+            {
+                // LA palanca de las banderitas: con childControlWidth el layout DECIDE el
+                // ancho de cada hija y lo reparte entre las doce. Sin quitarla, ensanchar la
+                // seccion no sirve de nada.
+                PonerBool(grupo, "childControlWidth", false);
+                PonerBool(grupo, "childForceExpandWidth", false);
+            }
+
+            float pide = n * lado + (n - 1) * FlagSpacing;
+            if (WidenSections) PreferirAncho(fila, pide);
+            return pide;
+        }
+
         // ------------------------------------------------------------------ paginacion
 
         /// <summary>
