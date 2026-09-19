@@ -117,11 +117,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
         static IEnumerator AjustarUnosFrames(StandardChecklistPage pagina)
         {
-            for (int i = 0; i < 5; i++)
+            // Cinco frames seguidos y luego tres tardias. Las tardias hacen falta porque el
+            // layout de la seccion se rehace DESPUES de la quinta -se vio en la traza: la
+            // cinta volvia a medir 370 al empezar cada pasada- y con ella se movia el medidor
+            // de cartas, que es contra lo que se mide.
+            for (int i = 1; i <= 40; i++)
             {
                 yield return null;
                 if (pagina == null) yield break;
-                Ajustar();
+                if (i <= 5 || i == 10 || i == 20 || i == 40) Ajustar();
             }
             // La traza se toma AQUI, no en la primera pasada: en la primera, el layout
             // todavia no ha rehecho nada y la seccion sigue diciendo el ancho de antes.
@@ -362,8 +366,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         // **mas alla de la placa** para que pase por debajo de las banderitas
                         // y llegue al final, como el banner del juego.
                         if (StretchPlaqueFill)
+                        {
+                            // Antes de medir, que el layout termine: si no, el medidor de
+                            // cartas todavia no esta en su sitio y la distancia sale corta.
+                            ReconstruirLayout(seccion);
                             EstirarFranja(seccion, placa, medidor, anchoPlaca,
                                           pideContenedor + hueco * 2f);
+                        }
                     }
                 }
             }
@@ -452,8 +461,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             // `ignoreLayout`-, asi que sumar anchos no vale. Midiendo la distancia real entre
             // el borde izquierdo de la cinta y el del medidor se acierta pase lo que pase con
             // el layout, y ademas se corrige solo en cada pasada.
-            float objetivo = DistanciaHasta(seccion, rc, medidor);
-            if (objetivo <= 1f) objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
+            // Se calcula por las dos vias y se coge la mayor. La medida es la buena cuando
+            // el layout ya ha colocado el medidor; cuando no, sale corta -288 px en vez de
+            // ~1250- y encogeria la cinta por debajo de lo que ya funcionaba. Quedandose con
+            // la mayor, el peor caso es el resultado de la version anterior, nunca peor.
+            float calculado = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
+            float medido = DistanciaHasta(seccion, rc, medidor);
+            float objetivo = Mathf.Max(calculado, medido);
             if (anchoViejo <= 1f || Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
             float crece = objetivo - anchoViejo;
 
@@ -462,8 +476,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             int tocados = EstirarDentro(cinta, anchoViejo, crece, 0);
 
             Log($"cinta \"{cinta.name}\" {anchoViejo:0} -> {objetivo:0} px " +
-                $"(medido hasta \"{(medidor != null ? medidor.name : "?")}\", " +
-                $"placa {anchoPlaca:0}, antes {antes:0}, {tocados} pieza(s) dentro)");
+                $"(calculado {calculado:0}, medido {medido:0} hasta " +
+                $"\"{(medidor != null ? medidor.name : "?")}\", placa {anchoPlaca:0}, " +
+                $"antes {antes:0}, {tocados} pieza(s) dentro)");
+        }
+
+        static readonly MethodInfo? MReconstruir = AccessTools.Method(
+            AccessTools.TypeByName("UnityEngine.UI.LayoutRebuilder"), "ForceRebuildLayoutImmediate");
+
+        /// <summary>
+        /// Fuerza al layout a resolverse YA. Sin esto se mide sobre posiciones a medio hacer.
+        /// </summary>
+        static void ReconstruirLayout(RectTransform rt)
+        {
+            try { MReconstruir?.Invoke(null, new object[] { rt }); }
+            catch (Exception e) { Log("no se pudo reconstruir el layout: " + e.Message, true); }
         }
 
         /// <summary>
