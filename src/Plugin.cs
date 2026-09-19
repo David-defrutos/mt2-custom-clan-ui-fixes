@@ -116,6 +116,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgPlaca = Config.Bind(
                 "ProgressGrid", "PlaqueWidth", 0f,
                 "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderitas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderitas. Un numero fijo la recorta.");
+            var cfgProgVolcado = Config.Bind(
+                "ProgressGrid", "DumpTree", true,
+                "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
             var cfgProgFranja = Config.Bind(
                 "ProgressGrid", "StretchPlaqueFill", true,
                 "Estira la franja de color de la placa hasta el final de esta. Sin esto la placa se ensancha pero el color se queda en su ancho preferido y deja pergamino a la vista.");
@@ -133,6 +136,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.Layout = cfgProgReparto.Value;
             LogbookProgressGrid.PlaqueWidth = cfgProgPlaca.Value;
             LogbookProgressGrid.StretchPlaqueFill = cfgProgFranja.Value;
+            LogbookProgressGrid.DumpTree = cfgProgVolcado.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
