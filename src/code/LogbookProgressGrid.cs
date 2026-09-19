@@ -362,7 +362,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         // **mas alla de la placa** para que pase por debajo de las banderitas
                         // y llegue al final, como el banner del juego.
                         if (StretchPlaqueFill)
-                            EstirarFranja(placa, anchoPlaca, pideContenedor + hueco * 2f);
+                            EstirarFranja(seccion, placa, medidor, anchoPlaca,
+                                          pideContenedor + hueco * 2f);
                     }
                 }
             }
@@ -419,7 +420,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// a cambio tampoco la coloca, asi que hay que sostenerle el borde izquierdo a mano
         /// (si no, al crecer con el pivote centrado se iria media franja hacia la izquierda).
         /// </summary>
-        static void EstirarFranja(Transform placa, float anchoPlaca, float sobresale)
+        static void EstirarFranja(RectTransform seccion, Transform placa, Transform? medidor,
+                                  float anchoPlaca, float sobresale)
         {
             // Solo cuando la placa ya tiene su ancho definitivo: antes de eso el layout aun
             // no ha colocado la franja y se congelaria en un sitio que no es.
@@ -443,7 +445,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (cinta is not RectTransform rc) return;
 
             float anchoViejo = rc.rect.width;
-            float objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
+
+            // El destino **se mide, no se calcula**. La cuenta (placa + hueco + contenedor +
+            // hueco) daba 1076 y el medidor de cartas esta de verdad en ~1465: la seccion no
+            // coloca sus tres partes en una fila limpia -se solapan, y alguna trae su propio
+            // `ignoreLayout`-, asi que sumar anchos no vale. Midiendo la distancia real entre
+            // el borde izquierdo de la cinta y el del medidor se acierta pase lo que pase con
+            // el layout, y ademas se corrige solo en cada pasada.
+            float objetivo = DistanciaHasta(seccion, rc, medidor);
+            if (objetivo <= 1f) objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
             if (anchoViejo <= 1f || Mathf.Abs(anchoViejo - objetivo) < 0.5f) return;
             float crece = objetivo - anchoViejo;
 
@@ -452,8 +462,31 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             int tocados = EstirarDentro(cinta, anchoViejo, crece, 0);
 
             Log($"cinta \"{cinta.name}\" {anchoViejo:0} -> {objetivo:0} px " +
-                $"(placa {anchoPlaca:0}, antes {antes:0}, sobresale {sobresale:0}, " +
-                $"{tocados} pieza(s) dentro)");
+                $"(medido hasta \"{(medidor != null ? medidor.name : "?")}\", " +
+                $"placa {anchoPlaca:0}, antes {antes:0}, {tocados} pieza(s) dentro)");
+        }
+
+        /// <summary>
+        /// Cuanto hay, en unidades de la seccion, desde el borde izquierdo de `desde` hasta el
+        /// borde izquierdo de `hasta`. Devuelve 0 si no se puede medir.
+        /// </summary>
+        static float DistanciaHasta(RectTransform seccion, RectTransform desde, Transform? hasta)
+        {
+            if (hasta is not RectTransform rh) return 0f;
+            try
+            {
+                var esquinas = new Vector3[4];
+                desde.GetWorldCorners(esquinas);
+                float x0 = seccion.InverseTransformPoint(esquinas[0]).x;
+                rh.GetWorldCorners(esquinas);
+                float x1 = seccion.InverseTransformPoint(esquinas[0]).x;
+                return Mathf.Max(0f, x1 - x0);
+            }
+            catch (Exception e)
+            {
+                Log("no se pudo medir la distancia al medidor: " + e.Message, true);
+                return 0f;
+            }
         }
 
         /// <summary>
