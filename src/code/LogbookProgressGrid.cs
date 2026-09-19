@@ -318,7 +318,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         // Y la franja de color, que es el ultimo hijo de la placa, se estira
                         // **mas alla de la placa** para que pase por debajo de las banderitas
                         // y llegue al final, como el banner del juego.
-                        if (StretchPlaqueFill) EstirarFranja(placa, anchoPlaca, pideContenedor + hueco);
+                        if (StretchPlaqueFill)
+                            EstirarFranja(placa, anchoPlaca, pideContenedor + hueco * 2f);
                     }
                 }
             }
@@ -366,9 +367,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// El ancho se calcula desde lo que ocupan los hermanos anteriores —el retrato y el
         /// nombre, que no cambian— y no desde el ancho actual de la franja, para que repetir
         /// la pasada cinco frames seguidos de el mismo resultado y no la vaya alargando.
+        ///
+        /// **Y hay que sacarla del layout de la placa.** Primer intento: darle un
+        /// `preferredWidth` grande. No basta —crecio un poco y se planto—, porque el
+        /// `HorizontalLayoutGroup` de la placa reparte el ancho DE LA PLACA entre sus hijos:
+        /// por mucho que la franja pida 1100, si en la placa quedan 424 libres, 424 le da. Con
+        /// `ignoreLayout = true` el grupo deja de tocarla y el ancho que se le ponga se queda;
+        /// a cambio tampoco la coloca, asi que hay que sostenerle el borde izquierdo a mano
+        /// (si no, al crecer con el pivote centrado se iria media franja hacia la izquierda).
         /// </summary>
         static void EstirarFranja(Transform placa, float anchoPlaca, float sobresale)
         {
+            // Solo cuando la placa ya tiene su ancho definitivo: antes de eso el layout aun
+            // no ha colocado la franja y se congelaria en un sitio que no es.
+            if (placa is not RectTransform rp || Mathf.Abs(rp.rect.width - anchoPlaca) > 1f) return;
+
             float huecoPlaca = LeerFloat(Componente(placa, "HorizontalLayoutGroup"), "spacing", 0f);
 
             var hijos = new List<Transform>();
@@ -382,10 +395,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 antes += huecoPlaca;
             }
 
-            var franja = hijos[hijos.Count - 1];
+            if (hijos[hijos.Count - 1] is not RectTransform franja) return;
             float objetivo = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
-            PreferirAncho(franja, objetivo);
+            if (Mathf.Abs(franja.rect.width - objetivo) < 0.5f) return;
+
+            PonerIgnoreLayout(franja, true);
+
+            float izquierda = franja.localPosition.x - franja.rect.width * franja.pivot.x;
             FijarAncho(franja, objetivo);
+            float ahora = franja.localPosition.x - franja.rect.width * franja.pivot.x;
+
+            var p = franja.localPosition;
+            p.x += izquierda - ahora;
+            franja.localPosition = p;
+
+            Log($"franja \"{franja.name}\" a {objetivo:0} px (placa {anchoPlaca:0}, sobresale {sobresale:0})");
         }
 
         static void PonerIgnoreLayout(Transform t, bool valor)
