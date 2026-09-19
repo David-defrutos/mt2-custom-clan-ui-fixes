@@ -111,11 +111,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "FreeFlagWidth", true,
                 "Quita childControlWidth a las dos filas de banderitas: es lo que hace que cada una recupere sus 48 px en vez de repartirse el ancho de la fila.");
             var cfgProgReparto = Config.Bind(
-                "ProgressGrid", "Layout", "overlay",
-                "Como se reparte el ancho dentro de la seccion. \"overlay\" = como lo dibuja el juego pero ancho: la placa de color se estira y las banderitas siguen encima de ella. \"inflow\" = el contenedor de aliados entra en la fila y la placa se estrecha a PlaqueWidth, porque se queda vacia.");
+                "ProgressGrid", "Layout", "inflow",
+                "Como se reparte el ancho dentro de la seccion. \"inflow\" = el contenedor de aliados entra en la fila y la placa se queda lo que sobra, con su franja de color llegando hasta las banderitas. \"overlay\" = el intento de ensanchar la placa dejando las banderitas encima, que se descarto porque el fondo de color no crece y las banderitas tapan el nombre del clan.");
             var cfgProgPlaca = Config.Bind(
-                "ProgressGrid", "PlaqueWidth", 370f,
-                "Ancho de la placa del retrato en el modo \"inflow\". Sin banderitas encima solo tiene que dar para el retrato y el nombre. No se usa en \"overlay\".");
+                "ProgressGrid", "PlaqueWidth", 0f,
+                "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderitas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderitas. Un numero fijo la recorta.");
+            var cfgProgFranja = Config.Bind(
+                "ProgressGrid", "StretchPlaqueFill", true,
+                "Estira la franja de color de la placa hasta el final de esta. Sin esto la placa se ensancha pero el color se queda en su ancho preferido y deja pergamino a la vista.");
             var cfgProgSeparacion = Config.Bind(
                 "ProgressGrid", "FlagSpacing", 6f,
                 "Separacion entre banderitas al calcular lo que pide la fila. La del juego son 6 px.");
@@ -129,6 +132,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.FreeFlagWidth = cfgProgSoltar.Value;
             LogbookProgressGrid.Layout = cfgProgReparto.Value;
             LogbookProgressGrid.PlaqueWidth = cfgProgPlaca.Value;
+            LogbookProgressGrid.StretchPlaqueFill = cfgProgFranja.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
