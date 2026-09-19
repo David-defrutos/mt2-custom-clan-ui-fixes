@@ -67,6 +67,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static float PlaqueWidth = 0f;        // 0 = lo que sobre; >0 = fijo
         public static bool StretchPlaqueFill = true; // estirar la franja de color de la placa
         public static bool DumpTree = true;          // volcar el arbol de la primera seccion
+        public static bool BalanceFlagRows = true;   // repartir las banderitas 9 y 9
+        public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -316,6 +318,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (contenedor == null) continue;
 
                 // Las filas primero: de ellas sale lo que pide el contenedor.
+                if (FlagAlignLeft && Componente(contenedor, "VerticalLayoutGroup") is Component vg)
+                    PonerAlineacion(vg, 3);
+
                 float pideFila = 0f;
                 foreach (Transform f in contenedor) pideFila = Mathf.Max(pideFila, Fila(f));
                 if (pideFila <= 1f) continue;
@@ -599,11 +604,100 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 // seccion no sirve de nada.
                 PonerBool(grupo, "childControlWidth", false);
                 PonerBool(grupo, "childForceExpandWidth", false);
+                // MiddleLeft (3): las banderitas pegadas al principio de la fila en vez de
+                // centradas, para que caigan dentro de la cinta de color.
+                if (FlagAlignLeft) PonerAlineacion(grupo, 3);
             }
 
             float pide = n * lado + (n - 1) * FlagSpacing;
             if (WidenSections) PreferirAncho(fila, pide);
             return pide;
+        }
+
+        // --------------------------------------------------------- reparto de banderitas
+
+        // Lo que hemos movido nosotros, para poder devolverlo antes de que el juego toque.
+        static readonly Dictionary<Transform, Transform> devolverA = new();
+
+        /// <summary>
+        /// Reparte las banderitas entre las dos filas a mitades: con 18 aliados, **9 y 9** en
+        /// vez de 12 y 6. Asi la fila larga pide 480 px en vez de 642 y cabe dentro de la
+        /// cinta de color.
+        ///
+        /// Esto mueve objetos de padre, que es justo lo que el mod tiene prohibido desde el
+        /// dia que dejo 26 rombos muertos en la pagina de mejoras. La diferencia es **donde**
+        /// se hace: el propio juego reparte estos iconos moviendolos de fila
+        /// (`ReparentCrewVictoryItems`), asi que aqui se engancha un postfijo a ESE metodo y
+        /// se rebalancea justo despues, cada vez que el juego rehace la pantalla. No se
+        /// queda nada colgado entre reconstrucciones, que era el problema de aquella vez.
+        ///
+        /// Y para que el juego nunca se encuentre con su fila cambiada, lo que movemos se
+        /// devuelve a su sitio ANTES de que el corra cualquiera de los dos metodos suyos.
+        ///
+        /// Si algun dia aparecen banderitas duplicadas o que no responden:
+        /// `BalanceFlagRows = false` en el config y vuelve el reparto del juego.
+        /// </summary>
+        [HarmonyPatch(typeof(ClanChecklistSection), "ReparentCrewVictoryItems")]
+        [HarmonyPostfix]
+        static void TrasRepartirAliados(ClanChecklistSection __instance)
+        {
+            if (!Enabled || !BalanceFlagRows) return;
+            try
+            {
+                if (FFila?.GetValue(__instance) is not Component c1) return;
+                if (FFilaCrew?.GetValue(__instance) is not Component c2) return;
+                Transform f1 = c1.transform, f2 = c2.transform;
+                if (!f1.gameObject.activeInHierarchy && !f2.gameObject.activeInHierarchy) return;
+
+                var arriba = Activos(f1);
+                var abajo = Activos(f2);
+                int total = arriba.Count + abajo.Count;
+                if (total < 4) return;
+
+                int quiero = Mathf.CeilToInt(total / 2f);   // 18 -> 9
+                if (arriba.Count <= quiero) return;
+
+                // Se bajan los ultimos de la fila de arriba, por el orden en que estan, y se
+                // ponen delante de los de tripulacion para no descolocar a estos.
+                int mover = arriba.Count - quiero;
+                for (int i = 0; i < mover; i++)
+                {
+                    var t = arriba[arriba.Count - 1 - i];
+                    if (!devolverA.ContainsKey(t)) devolverA[t] = f1;
+                    t.SetParent(f2, false);
+                    t.SetSiblingIndex(0);
+                }
+                Log($"aliados repartidos {arriba.Count}+{abajo.Count} -> {quiero}+{total - quiero}");
+            }
+            catch (Exception e) { Log("fallo repartiendo los aliados: " + e, true); }
+        }
+
+        /// <summary>Antes de que el juego toque sus filas, se le devuelve lo que movimos.</summary>
+        [HarmonyPatch(typeof(ClanChecklistSection), "ReparentCrewVictoryItems")]
+        [HarmonyPrefix]
+        static void AntesDeRepartir() => Devolver();
+
+        [HarmonyPatch(typeof(ClanChecklistSection), "ResetParentOfCrewVictoryItems")]
+        [HarmonyPrefix]
+        static void AntesDeDeshacer() => Devolver();
+
+        static void Devolver()
+        {
+            if (devolverA.Count == 0) return;
+            foreach (var par in devolverA)
+            {
+                var t = par.Key;
+                if (t == null || par.Value == null) continue;
+                try { t.SetParent(par.Value, false); } catch { }
+            }
+            devolverA.Clear();
+        }
+
+        static List<Transform> Activos(Transform padre)
+        {
+            var l = new List<Transform>();
+            foreach (Transform h in padre) if (h.gameObject.activeSelf) l.Add(h);
+            return l;
         }
 
         // ------------------------------------------------------------------ paginacion
@@ -719,6 +813,20 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
             catch { }
             return porDefecto;
+        }
+
+        /// <summary>`childAlignment`, que es un TextAnchor: 3 = MiddleLeft.</summary>
+        static void PonerAlineacion(Component c, int valor)
+        {
+            try
+            {
+                var prop = c.GetType().GetProperty("childAlignment");
+                if (prop == null) return;
+                var actual = prop.GetValue(c, null);
+                if (actual != null && Convert.ToInt32(actual) == valor) return;
+                prop.SetValue(c, Enum.ToObject(prop.PropertyType, valor), null);
+            }
+            catch (Exception ex) { Log($"no se pudo alinear {c.GetType().Name}: {ex.Message}", true); }
         }
 
         static void PonerBool(Component c, string propiedad, bool valor)

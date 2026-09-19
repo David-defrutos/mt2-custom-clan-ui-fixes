@@ -116,6 +116,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgPlaca = Config.Bind(
                 "ProgressGrid", "PlaqueWidth", 0f,
                 "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderitas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderitas. Un numero fijo la recorta.");
+            var cfgProgReparto2 = Config.Bind(
+                "ProgressGrid", "BalanceFlagRows", true,
+                "Reparte las banderitas de aliados a mitades entre las dos filas (con 18, 9 y 9 en vez de 12 y 6), para que la fila larga quepa dentro de la cinta de color. Mueve objetos de padre, igual que hace el juego: si aparecen banderitas duplicadas o que no responden, ponlo a false.");
+            var cfgProgIzquierda = Config.Bind(
+                "ProgressGrid", "FlagAlignLeft", true,
+                "Pega las banderitas al principio de su fila en vez de centrarlas, para que caigan dentro de la cinta.");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", true,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -137,6 +143,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.PlaqueWidth = cfgProgPlaca.Value;
             LogbookProgressGrid.StretchPlaqueFill = cfgProgFranja.Value;
             LogbookProgressGrid.DumpTree = cfgProgVolcado.Value;
+            LogbookProgressGrid.BalanceFlagRows = cfgProgReparto2.Value;
+            LogbookProgressGrid.FlagAlignLeft = cfgProgIzquierda.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
