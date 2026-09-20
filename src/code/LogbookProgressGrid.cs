@@ -321,6 +321,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             // Un solo ancho de medidor para TODOS los clanes: el del que mas cartas tiene.
             int columnasMedidor = FixMasteryMeter ? ColumnasMedidor() : 0;
 
+            // Y un solo ancho de contenedor de banderas para todos: si cada clan se queda
+            // con el suyo (unos tienen 12 aliados y otros 13), el medidor de cartas cae en
+            // una x distinta en cada seccion y la cinta sale de un largo distinto. 27 px de
+            // diferencia, pero se notan al comparar dos paginas.
+            float contenedorComun = ContenedorComun();
+
             foreach (var s in secciones)
             {
                 if (s == null || s.transform is not RectTransform seccion) continue;
@@ -355,7 +361,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 float pideFila = 0f;
                 foreach (Transform f in contenedor) pideFila = Mathf.Max(pideFila, Fila(f));
                 if (pideFila <= 1f) continue;
-                float pideContenedor = pideFila + 16f;   // relleno del VerticalLayoutGroup
+                float pideContenedor = Mathf.Max(pideFila + 16f, contenedorComun);
 
                 if (!WidenSections) continue;
 
@@ -413,6 +419,27 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// El ancho de contenedor de banderas que necesita el clan con mas aliados. Es el que
+        /// se le da a todos, para que el medidor de cartas caiga en la misma x en las 17
+        /// secciones y la cinta de color mida lo mismo en todas las paginas.
+        /// </summary>
+        static float ContenedorComun()
+        {
+            float mayor = 0f;
+            foreach (var s in secciones)
+            {
+                if (s == null) continue;
+                foreach (Transform h in s.transform)
+                {
+                    if (!h.name.Contains("victory container")) continue;
+                    foreach (Transform f in h) mayor = Mathf.Max(mayor, Fila(f));
+                    break;
+                }
+            }
+            return mayor > 1f ? mayor + 16f : 0f;
         }
 
         /// <summary>

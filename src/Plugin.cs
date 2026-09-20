@@ -124,7 +124,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "Pega las banderas al principio de su fila en vez de centrarlas, para que caigan dentro de la cinta.");
             var cfgProgExtra = Config.Bind(
                 "ProgressGrid", "RibbonExtra", 0f,
-                "Pixeles de mas para la cinta de color, por encima de lo que se calcula y se mide. Sube esto para que la barra llegue mas a la derecha. Para mover los iconos a la izquierda, baja PlaqueWidth.");
+                "Pixeles de mas para la cinta de color, POR ENCIMA del borde del medidor de cartas. Dejalo en 0: la cinta ya se mide sola hasta ahi. Solo sirve para alargarla a proposito, y entonces se solapa con el medidor.");
             var cfgProgMedidor = Config.Bind(
                 "ProgressGrid", "FixMasteryMeter", true,
                 "El medidor de cartas dominadas viene con 7 columnas fijas, justo para las 42 cartas de un clan del juego base. Un clan con mas cartas necesita otra fila y de alto no cabe: se sale y los rectangulos se pisan. Con esto se fijan las filas y la rejilla crece a lo ancho, que es donde hay sitio.");
