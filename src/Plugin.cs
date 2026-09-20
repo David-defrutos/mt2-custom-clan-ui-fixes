@@ -134,6 +134,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgFilasMedidor = Config.Bind(
                 "ProgressGrid", "MeterRows", 6,
                 "Filas que caben de alto en la seccion. Solo se usa como tope: si algun clan no cabe en MeterColumns x MeterRows, se anaden columnas para todos antes que dejar que se salga.");
+            var cfgProgCorrer = Config.Bind(
+                "ProgressGrid", "FlagOffsetX", 0f,
+                "Pixeles que se corren las banderitas de aliados dentro de la seccion. Negativo = hacia la izquierda. Se aplica como relleno del layout, que es lo unico que el propio layout no deshace.");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", true,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -158,6 +161,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.BalanceFlagRows = cfgProgReparto2.Value;
             LogbookProgressGrid.FlagAlignLeft = cfgProgIzquierda.Value;
             LogbookProgressGrid.RibbonExtra = cfgProgExtra.Value;
+            LogbookProgressGrid.FlagOffsetX = cfgProgCorrer.Value;
             LogbookProgressGrid.FixMasteryMeter = cfgProgMedidor.Value;
             LogbookProgressGrid.MeterColumns = cfgProgColsMedidor.Value;
             LogbookProgressGrid.MeterRows = cfgProgFilasMedidor.Value;

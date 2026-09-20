@@ -70,6 +70,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool BalanceFlagRows = true;   // repartir las banderitas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
         public static float RibbonExtra = 0f;        // px de mas para la cinta de color
+        public static float FlagOffsetX = 0f;        // px que se corren las banderitas (- = izquierda)
         public static bool FixMasteryMeter = true;   // que el medidor crezca en columnas
         public static int MeterColumns = 9;          // columnas fijas del medidor
         public static int MeterRows = 6;             // filas que caben de alto
@@ -325,8 +326,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (contenedor == null) continue;
 
                 // Las filas primero: de ellas sale lo que pide el contenedor.
-                if (FlagAlignLeft && Componente(contenedor, "VerticalLayoutGroup") is Component vg)
-                    PonerAlineacion(vg, 3);
+                if (Componente(contenedor, "VerticalLayoutGroup") is Component vg)
+                {
+                    if (FlagAlignLeft) PonerAlineacion(vg, 3);
+                    // El desplazamiento va por el relleno del layout, no moviendo el objeto:
+                    // el contenedor esta en la fila de la seccion, asi que cualquier cambio
+                    // de posicion se lo comeria el layout en la siguiente pasada. El relleno
+                    // si lo respeta, porque forma parte del calculo.
+                    if (Mathf.Abs(FlagOffsetX) > 0.5f) PonerRelleno(vg, Mathf.RoundToInt(FlagOffsetX));
+                }
 
                 float pideFila = 0f;
                 foreach (Transform f in contenedor) pideFila = Mathf.Max(pideFila, Fila(f));
@@ -927,6 +935,26 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
             catch { }
             return porDefecto;
+        }
+
+        /// <summary>
+        /// El `padding.left` del layout, que es lo unico que mueve a los hijos de sitio sin
+        /// que el layout lo deshaga en la pasada siguiente. Un valor negativo tira hacia la
+        /// izquierda.
+        /// </summary>
+        static void PonerRelleno(Component grupo, int izquierda)
+        {
+            try
+            {
+                var relleno = grupo.GetType().GetProperty("padding")?.GetValue(grupo, null);
+                if (relleno == null) return;
+                var pIzq = relleno.GetType().GetProperty("left");
+                if (pIzq == null) return;
+                if (Convert.ToInt32(pIzq.GetValue(relleno, null)) == izquierda) return;
+                pIzq.SetValue(relleno, izquierda, null);
+                Log($"banderitas corridas {izquierda} px");
+            }
+            catch (Exception e) { Log("no se pudo correr las banderitas: " + e.Message, true); }
         }
 
         /// <summary>`childAlignment`, que es un TextAnchor: 3 = MiddleLeft.</summary>
