@@ -89,6 +89,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             AccessTools.Field(typeof(ClanChecklistSection), "classData");
         static readonly FieldInfo? FFila =
             AccessTools.Field(typeof(ClanChecklistSection), "subclanVictoryLayout");
+        static readonly FieldInfo? FIndicePagina =
+            AccessTools.Field(typeof(PaginatedCompendiumSection), "currentPageIndex");
         static readonly FieldInfo? FFilaCrew =
             AccessTools.Field(typeof(ClanChecklistSection), "subclanVictoryLayoutCrew");
 
@@ -97,6 +99,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly List<Component> secciones = new();
         static int porHoja = 10, subpagina, subpaginas = 1;
         static bool trazado;
+        static bool pintandoRotulo;   // solo mientras el juego escribe el "Page N of M"
+        static int indiceReal;
         static Vector2 celdaOriginal;
         static bool celdaGuardada;
 
@@ -888,6 +892,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             subpagina = destino;
             PintarYMedir();
+            RefrescarRotulo(__instance);
             Log($"sub-pagina {subpagina + 1} de {subpaginas}");
             return false;
         }
@@ -910,13 +915,59 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             return true;   // fuera de las sub-paginas manda el original
         }
 
-        /// <summary>El "Page N of M": PageCount es checklistPages.Count, y la hoja estandar
-        /// pasa a valer por todas sus sub-paginas.</summary>
+        /// <summary>
+        /// El "Page N of M". Aqui hubo un fallo que costo entender: **inflar `PageCount`
+        /// siempre**. El rotulo salia con el total bueno, si, pero `PageCount` es tambien lo
+        /// que el juego usa para saber **hasta donde puede pasar de pagina**. Con 19 clanes
+        /// eso daba dos sintomas a la vez:
+        ///
+        ///   - el numero de la izquierda no se movia ("Page 1 of 5" en las cuatro
+        ///     sub-paginas), porque el indice real seguia siendo el de la hoja, el 0;
+        ///   - y desde la hoja de Railforged se podia seguir pasando tres veces mas, a unas
+        ///     paginas 3, 4 y 5 que no existen: el juego se creia que habia cinco.
+        ///
+        /// Asi que el total inflado se le da al juego **solo mientras esta escribiendo el
+        /// rotulo**, y durante ese rato se le cambia tambien el indice por el virtual. Para
+        /// navegar ve los numeros de verdad, que son los suyos, y las sub-paginas las lleva
+        /// este parche aparte.
+        ///
+        /// De paso el rotulo se traduce solo: lo escribe el juego con su propio formato y su
+        /// idioma, nosotros solo le cambiamos los dos numeros.
+        /// </summary>
         [HarmonyPatch(typeof(CompendiumSectionChecklist), "get_PageCount")]
         [HarmonyPostfix]
         static void TrasContarPaginas(ref int __result)
         {
-            if (Enabled && subpaginas > 1) __result += subpaginas - 1;
+            if (Enabled && subpaginas > 1 && pintandoRotulo) __result += subpaginas - 1;
+        }
+
+        [HarmonyPatch(typeof(PaginatedCompendiumSection), "RefreshPagination")]
+        [HarmonyPrefix]
+        static void AntesDelRotulo(PaginatedCompendiumSection __instance)
+        {
+            if (!Enabled || subpaginas <= 1 || FIndicePagina == null) return;
+            if (__instance is not CompendiumSectionChecklist checklist) return;
+
+            try
+            {
+                indiceReal = Convert.ToInt32(FIndicePagina.GetValue(__instance));
+                int virtual_ = EstamosEnLaEstandar(checklist)
+                    ? indiceReal + subpagina                    // dentro de la hoja estandar
+                    : indiceReal + subpaginas - 1;              // hojas posteriores
+                FIndicePagina.SetValue(__instance, virtual_);
+                pintandoRotulo = true;
+            }
+            catch (Exception e) { Log("no se pudo preparar el rotulo: " + e.Message, true); }
+        }
+
+        [HarmonyPatch(typeof(PaginatedCompendiumSection), "RefreshPagination")]
+        [HarmonyPostfix]
+        static void TrasElRotulo(PaginatedCompendiumSection __instance)
+        {
+            if (!pintandoRotulo) return;
+            pintandoRotulo = false;
+            try { FIndicePagina?.SetValue(__instance, indiceReal); }
+            catch (Exception e) { Log("no se pudo devolver el indice de pagina: " + e.Message, true); }
         }
 
         /// <summary>Al volver a la hoja estandar desde otra, hay que repintar la sub-pagina.</summary>
@@ -925,6 +976,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static void TrasRefrescar(CompendiumSectionChecklist __instance)
         {
             if (Enabled && subpaginas > 1 && EstamosEnLaEstandar(__instance)) PintarYMedir();
+        }
+
+        /// <summary>Cambiar de sub-pagina no pasa por el juego, asi que el rotulo hay que
+        /// pedirselo a mano.</summary>
+        static void RefrescarRotulo(PaginatedCompendiumSection seccion)
+        {
+            try { AccessTools.Method(typeof(PaginatedCompendiumSection), "RefreshPagination")?.Invoke(seccion, null); }
+            catch (Exception ex) { Log("no se pudo refrescar el rotulo: " + ex.Message, true); }
         }
 
         static bool EstamosEnLaEstandar(CompendiumSectionChecklist seccion)
