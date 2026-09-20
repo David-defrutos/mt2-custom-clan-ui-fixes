@@ -91,10 +91,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             var cfgProgActivo = Config.Bind(
                 "ProgressGrid", "Enabled", true,
-                "Pone la hoja de progreso del logbook a una columna y la pagina, para que se vean todos los clanes y las banderitas de aliados no se aplasten.");
+                "Pone la hoja de progreso del logbook a una columna y la pagina, para que se vean todos los clanes y las banderas de aliados no se aplasten.");
             var cfgProgColumnas = Config.Bind(
                 "ProgressGrid", "Columns", 1,
-                "Columnas de la rejilla de clanes. 1 = una seccion por fila, que es lo que deja sitio a las banderitas; 2 = la rejilla del juego.");
+                "Columnas de la rejilla de clanes. 1 = una seccion por fila, que es lo que deja sitio a las banderas; 2 = la rejilla del juego.");
             var cfgProgFilas = Config.Bind(
                 "ProgressGrid", "RowsPerPage", 0,
                 "Filas por hoja. 0 = las que quepan de alto (con la celda del juego, 5).");
@@ -109,19 +109,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "Estira la seccion de clan y el contenedor de aliados hasta el ancho nuevo de la celda. A false, la celda se ensancha pero dentro todo sigue pegado a la izquierda.");
             var cfgProgSoltar = Config.Bind(
                 "ProgressGrid", "FreeFlagWidth", true,
-                "Quita childControlWidth a las dos filas de banderitas: es lo que hace que cada una recupere sus 48 px en vez de repartirse el ancho de la fila.");
+                "Quita childControlWidth a las dos filas de banderas: es lo que hace que cada una recupere sus 48 px en vez de repartirse el ancho de la fila.");
             var cfgProgReparto = Config.Bind(
                 "ProgressGrid", "Layout", "inflow",
-                "Como se reparte el ancho dentro de la seccion. \"inflow\" = el contenedor de aliados entra en la fila y la placa se queda lo que sobra, con su franja de color llegando hasta las banderitas. \"overlay\" = el intento de ensanchar la placa dejando las banderitas encima, que se descarto porque el fondo de color no crece y las banderitas tapan el nombre del clan.");
+                "Como se reparte el ancho dentro de la seccion. \"inflow\" = el contenedor de aliados entra en la fila y la placa se queda lo que sobra, con su franja de color llegando hasta las banderas. \"overlay\" = el intento de ensanchar la placa dejando las banderas encima, que se descarto porque el fondo de color no crece y las banderas tapan el nombre del clan.");
             var cfgProgPlaca = Config.Bind(
                 "ProgressGrid", "PlaqueWidth", 0f,
-                "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderitas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderitas. Un numero fijo la recorta.");
+                "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderas. Un numero fijo la recorta.");
             var cfgProgReparto2 = Config.Bind(
                 "ProgressGrid", "BalanceFlagRows", true,
-                "Reparte las banderitas de aliados a mitades entre las dos filas (con 18, 9 y 9 en vez de 12 y 6), para que la fila larga quepa dentro de la cinta de color. Mueve objetos de padre, igual que hace el juego: si aparecen banderitas duplicadas o que no responden, ponlo a false.");
+                "Reparte las banderas de aliados a mitades entre las dos filas (con 18, 9 y 9 en vez de 12 y 6), para que la fila larga quepa dentro de la cinta de color. Mueve objetos de padre, igual que hace el juego: si aparecen banderas duplicadas o que no responden, ponlo a false.");
             var cfgProgIzquierda = Config.Bind(
                 "ProgressGrid", "FlagAlignLeft", true,
-                "Pega las banderitas al principio de su fila en vez de centrarlas, para que caigan dentro de la cinta.");
+                "Pega las banderas al principio de su fila en vez de centrarlas, para que caigan dentro de la cinta.");
             var cfgProgExtra = Config.Bind(
                 "ProgressGrid", "RibbonExtra", 0f,
                 "Pixeles de mas para la cinta de color, por encima de lo que se calcula y se mide. Sube esto para que la barra llegue mas a la derecha. Para mover los iconos a la izquierda, baja PlaqueWidth.");
@@ -136,7 +136,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "Filas que caben de alto en la seccion. Solo se usa como tope: si algun clan no cabe en MeterColumns x MeterRows, se anaden columnas para todos antes que dejar que se salga.");
             var cfgProgCorrer = Config.Bind(
                 "ProgressGrid", "FlagOffsetX", 0f,
-                "Pixeles que se corren las banderitas de aliados dentro de la seccion. Negativo = hacia la izquierda. Se aplica como relleno del layout, que es lo unico que el propio layout no deshace.");
+                "Pixeles que se mueven las banderas de aliados dentro de la seccion. Negativo = hacia la izquierda. Se aplica como relleno del layout, que es lo unico que el propio layout no deshace.");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", true,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -145,7 +145,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "Estira la franja de color de la placa hasta el final de esta. Sin esto la placa se ensancha pero el color se queda en su ancho preferido y deja pergamino a la vista.");
             var cfgProgSeparacion = Config.Bind(
                 "ProgressGrid", "FlagSpacing", 6f,
-                "Separacion entre banderitas al calcular lo que pide la fila. La del juego son 6 px.");
+                "Separacion entre banderas al calcular lo que pide la fila. La del juego son 6 px.");
 
             LogbookProgressGrid.Enabled = cfgProgActivo.Value;
             LogbookProgressGrid.Columns = cfgProgColumnas.Value;

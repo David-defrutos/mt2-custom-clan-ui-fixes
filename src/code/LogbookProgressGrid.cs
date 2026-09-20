@@ -11,7 +11,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     /// <summary>
     /// Pone la hoja de progreso del logbook (`CompendiumSectionChecklist`, la de
     /// "Progress Record") a una columna y la pagina, para que se vean TODOS los clanes y las
-    /// banderitas de aliados dejen de aplastarse.
+    /// banderas de aliados dejen de aplastarse.
     ///
     /// Como esta montada, medido en partida el 18-sep-2026:
     ///   - `StandardChecklistPage` tiene la rejilla "All launch clans layout", **1440x846**,
@@ -21,14 +21,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     ///     verlas**. No es que esten apretadas: es que no estan.
     ///   - Cada seccion mide 710x157 y dentro lleva `Main class section` (582),
     ///     `Subclan victory container` (370) y `Card mastery meter` (105).
-    ///   - Las banderitas de aliados viven en dos `HorizontalLayoutGroup` de **354 px** con
+    ///   - Las banderas de aliados viven en dos `HorizontalLayoutGroup` de **354 px** con
     ///     `childControlWidth=True`: `Subclan victory layout` (12 aliados normales) y
-    ///     `Subclan victory layout crew` (6 de tripulacion). Doce banderitas de 48 px con 6
+    ///     `Subclan victory layout crew` (6 de tripulacion). Doce banderas de 48 px con 6
     ///     de separacion piden 642 px, y solo hay 354, asi que el layout las aplasta a ~24 y
     ///     el dibujo se solapa. La fila de tripulacion, con seis, cabe de sobra.
     ///
     /// La cuenta que resuelve las dos cosas a la vez: **una sola columna**. La celda pasa de
-    /// 710 a 1440, el contenedor de aliados se ensancha con ella y las doce banderitas caben
+    /// 710 a 1440, el contenedor de aliados se ensancha con ella y las doce banderas caben
     /// sin encoger. El precio es que por hoja entran 5 secciones en vez de 10, y de ahi la
     /// paginacion.
     ///
@@ -52,25 +52,25 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool Verbose = true;
         public static int DetailSections = 1; // secciones que se vuelcan con todo el detalle
         public static bool WidenSections = true; // estirar la seccion a la celda
-        public static bool FreeFlagWidth = true; // soltar el ancho de las banderitas
-        public static float FlagSpacing = 6f;    // separacion entre banderitas
+        public static bool FreeFlagWidth = true; // soltar el ancho de las banderas
+        public static float FlagSpacing = 6f;    // separacion entre banderas
         /// <summary>
         /// Como se reparte el ancho dentro de la seccion:
         ///   "inflow" (por defecto) — el contenedor de aliados entra en la fila, y la placa
         ///                            se queda todo lo que sobra, asi que su franja de color
-        ///                            llega hasta las banderitas;
+        ///                            llega hasta las banderas;
         ///   "overlay"              — se intento respetar el diseno del juego ensanchando la
-        ///                            placa con las banderitas encima. **Descartado**: ver
+        ///                            placa con las banderas encima. **Descartado**: ver
         ///                            `Ensanchar`.
         /// </summary>
         public static string Layout = "inflow";
         public static float PlaqueWidth = 0f;        // 0 = lo que sobre; >0 = fijo
         public static bool StretchPlaqueFill = true; // estirar la franja de color de la placa
         public static bool DumpTree = true;          // volcar el arbol de la primera seccion
-        public static bool BalanceFlagRows = true;   // repartir las banderitas 9 y 9
+        public static bool BalanceFlagRows = true;   // repartir las banderas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
         public static float RibbonExtra = 0f;        // px de mas para la cinta de color
-        public static float FlagOffsetX = 0f;        // px que se corren las banderitas (- = izquierda)
+        public static float FlagOffsetX = 0f;        // px que se mueven las banderas (- = izquierda)
         public static bool FixMasteryMeter = true;   // que el medidor crezca en columnas
         public static int MeterColumns = 9;          // columnas fijas del medidor
         public static int MeterRows = 6;             // filas que caben de alto
@@ -258,11 +258,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// siguiente. Los dos estan resueltos midiendo, no adivinando: la traza de esta misma
         /// clase es la que los canto.
         ///
-        /// **1. Las banderitas aplastadas: `childControlWidth`.**
+        /// **1. Las banderas aplastadas: `childControlWidth`.**
         /// La cuenta de los 642 px lleva a pensar que faltaba sitio, y no era eso.
         /// `subclanVictoryLayout` es un `HorizontalLayoutGroup` con `childControlWidth=True`,
         /// y con esa bandera puesta el layout **decide** el ancho de cada hijo y lo reparte
-        /// entre los doce: por ancha que se ponga la seccion, las banderitas se quedan a ~24
+        /// entre los doce: por ancha que se ponga la seccion, las banderas se quedan a ~24
         /// px. Quitandola, cada una recupera sus 48 y la fila pide sus 642 honestos.
         ///
         /// **2. La media hoja en blanco: `ignoreLayout` en el contenedor.**
@@ -284,16 +284,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         ///
         /// **Y una vez hay sitio, hay que decidir que hacer con el.** Probado en partida el
         /// 18-sep: metiendo el contenedor en la fila la hoja se llena, pero la placa de color
-        /// **se queda vacia**, porque las banderitas vivian encima de ella —para eso estaba el
+        /// **se queda vacia**, porque las banderas vivian encima de ella —para eso estaba el
         /// `ignoreLayout`— y se van a la derecha, sobre el pergamino. De ahi los dos modos de
         /// `Layout`:
         ///
         ///   - **`overlay`** (por defecto): se respeta el diseno del juego y se ensancha. La
         ///     placa se estira hasta el medidor de cartas —quitandole su `ContentSizeFitter`,
         ///     que es quien la clava en 582— y el contenedor sigue flotando encima, ya con
-        ///     sitio para las doce banderitas.
+        ///     sitio para las doce banderas.
         ///   - **`inflow`**: el contenedor entra en la fila y la placa se estrecha a
-        ///     `PlaqueWidth`, lo que ocupa el retrato, ya que se queda sin banderitas.
+        ///     `PlaqueWidth`, lo que ocupa el retrato, ya que se queda sin banderas.
         /// </summary>
         static void Ensanchar(float anchoCelda)
         {
@@ -329,7 +329,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (Componente(contenedor, "VerticalLayoutGroup") is Component vg)
                 {
                     if (FlagAlignLeft) PonerAlineacion(vg, 3);
-                    // El desplazamiento va por el relleno del layout, no moviendo el objeto:
+                    // Se mueven con el relleno del layout, no cambiandoles la posicion:
                     // el contenedor esta en la fila de la seccion, asi que cualquier cambio
                     // de posicion se lo comeria el layout en la siguiente pasada. El relleno
                     // si lo respeta, porque forma parte del calculo.
@@ -368,8 +368,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 else
                 {
                     // --- Modo "inflow": el contenedor de aliados entra en la fila, pega las
-                    // banderitas a su sitio sin holgura, y **la placa se queda todo lo que
-                    // sobra**, asi que su franja de color llega hasta las banderitas.
+                    // banderas a su sitio sin holgura, y **la placa se queda todo lo que
+                    // sobra**, asi que su franja de color llega hasta las banderas.
                     EnFila(contenedor, pideContenedor);
 
                     if (placa != null)
@@ -384,7 +384,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         FijarAncho(placa, anchoPlaca);
 
                         // Y la franja de color, que es el ultimo hijo de la placa, se estira
-                        // **mas alla de la placa** para que pase por debajo de las banderitas
+                        // **mas alla de la placa** para que pase por debajo de las banderas
                         // y llegue al final, como el banner del juego.
                         if (StretchPlaqueFill)
                         {
@@ -489,7 +489,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// Mete el contenedor de aliados en la fila de la seccion con el ancho justo que pide
         /// y **sin holgura** (`flexibleWidth = 0`): el sobrante es para la placa. Con holgura
         /// aqui, el contenedor se quedaba los ~900 px de la fila y su `VerticalLayoutGroup`
-        /// centraba las banderitas, dejando hueco a los dos lados.
+        /// centraba las banderas, dejando hueco a los dos lados.
         /// </summary>
         static void EnFila(Transform contenedor, float ancho)
         {
@@ -517,11 +517,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// <summary>
         /// La franja de color: el ultimo hijo de la placa. Se le da un ancho que **se sale de
         /// la placa** por la derecha, tanto como ocupa el contenedor de aliados, para que la
-        /// barra pase por debajo de las banderitas y llegue al final, que es como lo dibuja el
+        /// barra pase por debajo de las banderas y llegue al final, que es como lo dibuja el
         /// juego con pocos clanes.
         ///
         /// Puede salirse porque en Unity un hijo no esta recortado por el rect del padre
-        /// mientras no haya mascara; y queda por DEBAJO de las banderitas porque la placa va
+        /// mientras no haya mascara; y queda por DEBAJO de las banderas porque la placa va
         /// antes que el contenedor en la jerarquia, y ese es el orden en que se dibuja.
         ///
         /// El ancho se calcula desde lo que ocupan los hermanos anteriores —el retrato y el
@@ -690,7 +690,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
-        /// Una de las dos filas de banderitas. Devuelve lo que pide de ancho, que es lo que
+        /// Una de las dos filas de banderas. Devuelve lo que pide de ancho, que es lo que
         /// necesita saber el contenedor.
         /// </summary>
         static float Fila(Transform fila)
@@ -707,12 +707,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             if (FreeFlagWidth && Componente(fila, "HorizontalLayoutGroup") is Component grupo)
             {
-                // LA palanca de las banderitas: con childControlWidth el layout DECIDE el
+                // LA palanca de las banderas: con childControlWidth el layout DECIDE el
                 // ancho de cada hija y lo reparte entre las doce. Sin quitarla, ensanchar la
                 // seccion no sirve de nada.
                 PonerBool(grupo, "childControlWidth", false);
                 PonerBool(grupo, "childForceExpandWidth", false);
-                // MiddleLeft (3): las banderitas pegadas al principio de la fila en vez de
+                // MiddleLeft (3): las banderas pegadas al principio de la fila en vez de
                 // centradas, para que caigan dentro de la cinta de color.
                 if (FlagAlignLeft) PonerAlineacion(grupo, 3);
             }
@@ -722,7 +722,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             return pide;
         }
 
-        // --------------------------------------------------------- reparto de banderitas
+        // --------------------------------------------------------- reparto de banderas
 
         // El ancho que tenia cada pieza ANTES de que la tocaramos. Sin esto no hay forma de
         // ser idempotente: el layout devuelve la cinta a 370 en cada pasada pero a sus hijos
@@ -742,7 +742,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly Dictionary<Transform, Transform> devolverA = new();
 
         /// <summary>
-        /// Reparte las banderitas entre las dos filas a mitades: con 18 aliados, **9 y 9** en
+        /// Reparte las banderas entre las dos filas a mitades: con 18 aliados, **9 y 9** en
         /// vez de 12 y 6. Asi la fila larga pide 480 px en vez de 642 y cabe dentro de la
         /// cinta de color.
         ///
@@ -756,7 +756,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// Y para que el juego nunca se encuentre con su fila cambiada, lo que movemos se
         /// devuelve a su sitio ANTES de que el corra cualquiera de los dos metodos suyos.
         ///
-        /// Si algun dia aparecen banderitas duplicadas o que no responden:
+        /// Si algun dia aparecen banderas duplicadas o que no responden:
         /// `BalanceFlagRows = false` en el config y vuelve el reparto del juego.
         /// </summary>
         [HarmonyPatch(typeof(ClanChecklistSection), "ReparentCrewVictoryItems")]
@@ -952,9 +952,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (pIzq == null) return;
                 if (Convert.ToInt32(pIzq.GetValue(relleno, null)) == izquierda) return;
                 pIzq.SetValue(relleno, izquierda, null);
-                Log($"banderitas corridas {izquierda} px");
+                Log($"mover banderas {izquierda} px");
             }
-            catch (Exception e) { Log("no se pudo correr las banderitas: " + e.Message, true); }
+            catch (Exception e) { Log("no se pudo mover las banderas: " + e.Message, true); }
         }
 
         /// <summary>`childAlignment`, que es un TextAnchor: 3 = MiddleLeft.</summary>
@@ -1075,7 +1075,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 {
                     Log($"    parte \"{h.name}\"{Medidas(h)}{Componentes(h)}");
                     // Un nivel mas dentro de las dos partes que se tocan: en el contenedor
-                    // viven las filas de banderitas, y en la placa, la franja de color.
+                    // viven las filas de banderas, y en la placa, la franja de color.
                     if (!h.name.Contains("victory container") && !h.name.Contains("Main class section"))
                         continue;
                     foreach (Transform f in h)
