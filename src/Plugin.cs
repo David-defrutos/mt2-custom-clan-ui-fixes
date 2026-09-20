@@ -125,6 +125,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var cfgProgExtra = Config.Bind(
                 "ProgressGrid", "RibbonExtra", 0f,
                 "Pixeles de mas para la cinta de color, por encima de lo que se calcula y se mide. Sube esto para que la barra llegue mas a la derecha. Para mover los iconos a la izquierda, baja PlaqueWidth.");
+            var cfgProgMedidor = Config.Bind(
+                "ProgressGrid", "FixMasteryMeter", true,
+                "El medidor de cartas dominadas viene con 7 columnas fijas, justo para las 42 cartas de un clan del juego base. Un clan con mas cartas necesita otra fila y de alto no cabe: se sale y los rectangulos se pisan. Con esto se fijan las filas y la rejilla crece a lo ancho, que es donde hay sitio.");
+            var cfgProgFilasMedidor = Config.Bind(
+                "ProgressGrid", "MeterRows", 6,
+                "Filas del medidor de cartas. 6 son las del juego (42 cartas en 7x6).");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", true,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -149,6 +155,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.BalanceFlagRows = cfgProgReparto2.Value;
             LogbookProgressGrid.FlagAlignLeft = cfgProgIzquierda.Value;
             LogbookProgressGrid.RibbonExtra = cfgProgExtra.Value;
+            LogbookProgressGrid.FixMasteryMeter = cfgProgMedidor.Value;
+            LogbookProgressGrid.MeterRows = cfgProgFilasMedidor.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();

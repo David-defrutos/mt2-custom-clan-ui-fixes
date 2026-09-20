@@ -70,6 +70,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool BalanceFlagRows = true;   // repartir las banderitas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
         public static float RibbonExtra = 0f;        // px de mas para la cinta de color
+        public static bool FixMasteryMeter = true;   // que el medidor crezca en columnas
+        public static int MeterRows = 6;             // filas del medidor (las del juego)
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -330,6 +332,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (!WidenSections) continue;
 
                 float hueco = LeerFloat(Componente(seccion, "HorizontalLayoutGroup"), "spacing", 24f);
+                if (FixMasteryMeter) ArreglarMedidor(medidor);
                 float anchoMedidor = medidor is RectTransform rm && rm.rect.width > 1f ? rm.rect.width : 105f;
 
                 if (superponer)
@@ -382,6 +385,61 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// El medidor de "cartas dominadas" es un `GridLayoutGroup` con **7 columnas fijas**:
+        /// celda 12x21,6 y separacion 3,5x5, que dan los 105x155 exactos de un clan del juego
+        /// base, con sus **42 cartas** en 7x6.
+        ///
+        /// Un clan con mas cartas -FreeCompany tiene 47- necesita una septima fila, y **de
+        /// alto no hay sitio**: la rejilla se sale de la seccion y los rectangulos se pisan.
+        /// De ancho, en cambio, sobra desde que la hoja va a una columna.
+        ///
+        /// Asi que se le da la vuelta a la restriccion: en vez de fijar columnas se fijan
+        /// **filas** (`FixedRowCount`, las 6 del juego) y la rejilla crece hacia la derecha.
+        /// Con 47 cartas salen 8 columnas en vez de 7, o sea 15 px mas de ancho.
+        ///
+        /// El ancho hay que ponerselo a mano: el `GridLayoutGroup` coloca las celdas pero no
+        /// ensancha el rect que las contiene.
+        /// </summary>
+        static void ArreglarMedidor(Transform? medidor)
+        {
+            if (medidor is not RectTransform rt) return;
+            var rejilla = Rejilla(medidor);
+            if (rejilla == null) return;
+
+            try
+            {
+                int cartas = 0;
+                foreach (Transform h in medidor) if (h.gameObject.activeSelf) cartas++;
+                if (cartas == 0) return;
+
+                int filas = Mathf.Max(1, MeterRows);
+                var celda = LeerVector(rejilla, "cellSize");
+                var hueco = LeerVector(rejilla, "spacing");
+                if (celda.x <= 0f) return;
+
+                // Constraint: 0 Flexible, 1 FixedColumnCount, 2 FixedRowCount.
+                var pConst = rejilla.GetType().GetProperty("constraint");
+                var pCuenta = rejilla.GetType().GetProperty("constraintCount");
+                if (pConst == null || pCuenta == null) return;
+
+                bool cambia = Convert.ToInt32(pConst.GetValue(rejilla, null)) != 2
+                           || Convert.ToInt32(pCuenta.GetValue(rejilla, null)) != filas;
+
+                pConst.SetValue(rejilla, Enum.ToObject(pConst.PropertyType, 2), null);
+                pCuenta.SetValue(rejilla, filas, null);
+
+                int columnas = Mathf.CeilToInt((float)cartas / filas);
+                float ancho = columnas * celda.x + (columnas - 1) * hueco.x;
+
+                PreferirAncho(medidor, ancho);
+                FijarAncho(rt, ancho);
+
+                if (cambia) Log($"medidor: {cartas} cartas en {columnas}x{filas} -> {ancho:0} px de ancho");
+            }
+            catch (Exception e) { Log("fallo ajustando el medidor de cartas: " + e.Message, true); }
         }
 
         /// <summary>
