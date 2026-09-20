@@ -300,6 +300,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             bool superponer = !Layout.Equals("inflow", StringComparison.OrdinalIgnoreCase);
 
+            // Un solo ancho de medidor para TODOS los clanes: el del que mas cartas tiene.
+            float anchoMedidorComun = FixMasteryMeter ? AnchoMedidorComun() : 0f;
+
             foreach (var s in secciones)
             {
                 if (s == null || s.transform is not RectTransform seccion) continue;
@@ -332,7 +335,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (!WidenSections) continue;
 
                 float hueco = LeerFloat(Componente(seccion, "HorizontalLayoutGroup"), "spacing", 24f);
-                if (FixMasteryMeter) ArreglarMedidor(medidor);
+                if (FixMasteryMeter) ArreglarMedidor(medidor, anchoMedidorComun);
                 float anchoMedidor = medidor is RectTransform rm && rm.rect.width > 1f ? rm.rect.width : 105f;
 
                 if (superponer)
@@ -388,6 +391,40 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
+        /// El ancho que necesita el clan con MAS cartas de los instalados. Es el que se le da
+        /// a todos, para que la columna de medidores quede a plomo.
+        /// </summary>
+        static float AnchoMedidorComun()
+        {
+            int masCartas = 0;
+            Component? unaRejilla = null;
+
+            foreach (var s in secciones)
+            {
+                if (s == null) continue;
+                foreach (Transform h in s.transform)
+                {
+                    if (!h.name.Contains("Card mastery")) continue;
+                    unaRejilla ??= Rejilla(h);
+                    int n = 0;
+                    foreach (Transform c in h) if (c.gameObject.activeSelf) n++;
+                    if (n > masCartas) masCartas = n;
+                    break;
+                }
+            }
+
+            if (masCartas == 0 || unaRejilla == null) return 0f;
+
+            var celda = LeerVector(unaRejilla, "cellSize");
+            var hueco = LeerVector(unaRejilla, "spacing");
+            if (celda.x <= 0f) return 0f;
+
+            int filas = Mathf.Max(1, MeterRows);
+            int columnas = Mathf.CeilToInt((float)masCartas / filas);
+            return columnas * celda.x + (columnas - 1) * hueco.x;
+        }
+
+        /// <summary>
         /// El medidor de "cartas dominadas" es un `GridLayoutGroup` con **7 columnas fijas**:
         /// celda 12x21,6 y separacion 3,5x5, que dan los 105x155 exactos de un clan del juego
         /// base, con sus **42 cartas** en 7x6.
@@ -403,7 +440,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// El ancho hay que ponerselo a mano: el `GridLayoutGroup` coloca las celdas pero no
         /// ensancha el rect que las contiene.
         /// </summary>
-        static void ArreglarMedidor(Transform? medidor)
+        static void ArreglarMedidor(Transform? medidor, float anchoComun)
         {
             if (medidor is not RectTransform rt) return;
             var rejilla = Rejilla(medidor);
@@ -432,12 +469,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 pCuenta.SetValue(rejilla, filas, null);
 
                 int columnas = Mathf.CeilToInt((float)cartas / filas);
-                float ancho = columnas * celda.x + (columnas - 1) * hueco.x;
+                float propio = columnas * celda.x + (columnas - 1) * hueco.x;
+
+                // Todos los medidores miden lo mismo: el que necesita el clan con mas cartas.
+                // Si cada uno se queda con su ancho justo (105, 121, 136...), la columna de
+                // medidores sale con el borde derecho irregular y se ve desordenada. Al que
+                // tiene menos cartas simplemente le sobra sitio a la derecha.
+                float ancho = Mathf.Max(propio, anchoComun);
 
                 PreferirAncho(medidor, ancho);
                 FijarAncho(rt, ancho);
 
-                if (cambia) Log($"medidor: {cartas} cartas en {columnas}x{filas} -> {ancho:0} px de ancho");
+                if (cambia) Log($"medidor: {cartas} cartas en {columnas}x{filas}, " +
+                                $"{propio:0} px propios -> {ancho:0} px (comun)");
             }
             catch (Exception e) { Log("fallo ajustando el medidor de cartas: " + e.Message, true); }
         }
