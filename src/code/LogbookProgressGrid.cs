@@ -89,6 +89,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             AccessTools.Field(typeof(ClanChecklistSection), "classData");
         static readonly FieldInfo? FFila =
             AccessTools.Field(typeof(ClanChecklistSection), "subclanVictoryLayout");
+        static readonly FieldInfo? FLayoutRail =
+            AccessTools.Field(typeof(RailforgedChecklistPage), "clanSectionsLayoutAllDlcClans");
+        static readonly FieldInfo? FSeccionesRail =
+            AccessTools.Field(typeof(RailforgedChecklistPage), "clanChecklistSections");
         static readonly FieldInfo? FIndicePagina =
             AccessTools.Field(typeof(PaginatedCompendiumSection), "currentPageIndex");
         static readonly FieldInfo? FFilaCrew =
@@ -97,6 +101,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         // La hoja estandar viva y sus secciones, en el orden en que las creo el juego.
         static StandardChecklistPage? hoja;
         static readonly List<Component> secciones = new();
+
+        // La segunda hoja, la de los clanes de DLC (Railforged, Wurmkin). Es otro tipo de
+        // pagina -`RailforgedChecklistPage`, con sus propias raices- y por eso se quedaba con
+        // el formato del juego mientras las otras 17 ya iban a una columna. No necesita
+        // sub-paginas, solo el mismo formato.
+        static RailforgedChecklistPage? hojaRail;
+        static readonly List<Component> seccionesRail = new();
         static int porHoja = 10, subpagina, subpaginas = 1;
         static bool trazado;
         static bool pintandoRotulo;   // solo mientras el juego escribe el "Page N of M"
@@ -123,6 +134,35 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             {
                 try { __instance.StartCoroutine(AjustarUnosFrames(__instance)); }
                 catch (Exception e) { Log("no se pudo encolar el reintento: " + e.Message, true); }
+            }
+        }
+
+        [HarmonyPatch(typeof(RailforgedChecklistPage), "Initialize")]
+        [HarmonyPostfix]
+        static void TrasInicializarRail(RailforgedChecklistPage __instance)
+        {
+            hojaRail = __instance;
+            seccionesRail.Clear();
+            if (FSeccionesRail?.GetValue(__instance) is IEnumerable lista)
+                foreach (var s in lista)
+                    if (s is Component c && c != null) seccionesRail.Add(c);
+
+            if (!Enabled || seccionesRail.Count == 0) return;
+            Ajustar();
+            if (__instance.isActiveAndEnabled)
+            {
+                try { __instance.StartCoroutine(AjustarRailUnosFrames(__instance)); }
+                catch (Exception e) { Log("no se pudo encolar el reintento de Railforged: " + e.Message, true); }
+            }
+        }
+
+        static IEnumerator AjustarRailUnosFrames(RailforgedChecklistPage pagina)
+        {
+            for (int i = 1; i <= 40; i++)
+            {
+                yield return null;
+                if (pagina == null) yield break;
+                if (i <= 5 || i == 10 || i == 20 || i == 40) Ajustar();
             }
         }
 
@@ -197,6 +237,42 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             {
                 Log("fallo ajustando la hoja: " + e, true);
             }
+
+            AjustarRail();
+        }
+
+        /// <summary>
+        /// La hoja de los clanes de DLC. Mismo formato que la otra -una columna y las
+        /// secciones anchas- pero **sin sub-paginas**: son dos clanes y caben de sobra.
+        /// </summary>
+        static void AjustarRail()
+        {
+            if (!Enabled || hojaRail == null || seccionesRail.Count == 0) return;
+            try
+            {
+                if (FLayoutRail?.GetValue(hojaRail) is not Component layout) return;
+                if (layout.transform is not RectTransform rt) return;
+                var rejilla = Rejilla(layout.transform);
+                if (rejilla == null) return;
+
+                float ancho = rt.rect.width;
+                if (ancho <= 1f) return;
+
+                var celda = LeerVector(rejilla, "cellSize");
+                var hueco = LeerVector(rejilla, "spacing");
+                if (celda.y <= 1f) return;
+
+                int columnas = Mathf.Max(1, Columns);
+                float anchoCelda = (ancho - (columnas - 1) * hueco.x) / columnas;
+                if (Mathf.Abs(anchoCelda - celda.x) > 0.5f)
+                {
+                    EscribirVector(rejilla, "cellSize", new Vector2(anchoCelda, celda.y));
+                    Log($"Railforged: celda {celda.x:0} -> {anchoCelda:0} px ({columnas} columna(s))");
+                }
+
+                EnsancharLista(seccionesRail, anchoCelda);
+            }
+            catch (Exception e) { Log("fallo ajustando la hoja de Railforged: " + e, true); }
         }
 
         /// <summary>
@@ -315,7 +391,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         ///   - **`inflow`**: el contenedor entra en la fila y la placa se estrecha a
         ///     `PlaqueWidth`, lo que ocupa el retrato, ya que se queda sin banderas.
         /// </summary>
-        static void Ensanchar(float anchoCelda)
+        static void Ensanchar(float anchoCelda) => EnsancharLista(secciones, anchoCelda);
+
+        static void EnsancharLista(List<Component> lista, float anchoCelda)
         {
             if (anchoCelda <= 1f) return;
             if (!WidenSections && !FreeFlagWidth) return;
@@ -331,7 +409,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             // diferencia, pero se notan al comparar dos paginas.
             float contenedorComun = ContenedorComun();
 
-            foreach (var s in secciones)
+            foreach (var s in lista)
             {
                 if (s == null || s.transform is not RectTransform seccion) continue;
 
@@ -426,6 +504,17 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
+        /// Las 19 secciones: las 17 de la hoja estandar y las 2 de la de DLC. Las medidas
+        /// comunes -ancho de medidor y de contenedor- tienen que salir de todas, o los dos
+        /// clanes de DLC quedarian con otro tamano.
+        /// </summary>
+        static IEnumerable<Component> TodasLasSecciones()
+        {
+            foreach (var s in secciones) if (s != null) yield return s;
+            foreach (var s in seccionesRail) if (s != null) yield return s;
+        }
+
+        /// <summary>
         /// El ancho de contenedor de banderas que necesita el clan con mas aliados. Es el que
         /// se le da a todos, para que el medidor de cartas caiga en la misma x en las 17
         /// secciones y la cinta de color mida lo mismo en todas las paginas.
@@ -433,7 +522,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static float ContenedorComun()
         {
             float mayor = 0f;
-            foreach (var s in secciones)
+            foreach (var s in TodasLasSecciones())
             {
                 if (s == null) continue;
                 foreach (Transform h in s.transform)
@@ -454,7 +543,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static int ColumnasMedidor()
         {
             int masCartas = 0;
-            foreach (var s in secciones)
+            foreach (var s in TodasLasSecciones())
             {
                 if (s == null) continue;
                 foreach (Transform h in s.transform)
