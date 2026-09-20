@@ -195,6 +195,22 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
 
+        /// <summary>
+        /// Cambia de sub-pagina Y vuelve a medir. Lo segundo no es un extra: `Ajustar` solo
+        /// corria al abrir la pantalla, y ahi **solo estan activas las 5 secciones de la
+        /// primera sub-pagina**. Las de las demas se median apagadas, con los tamanos de otro
+        /// momento, y por eso la cinta de color salia de un largo distinto en cada pagina
+        /// -igual dentro de una, distinta entre ellas-. Un objeto apagado no pasa por el
+        /// layout, asi que sus medidas no valen hasta que se enciende.
+        /// </summary>
+        static void PintarYMedir()
+        {
+            Pintar();
+            if (hoja == null || !hoja.isActiveAndEnabled) return;
+            try { hoja.StartCoroutine(AjustarUnosFrames(hoja)); }
+            catch (Exception e) { Log("no se pudo re-medir al cambiar de sub-pagina: " + e.Message, true); }
+        }
+
         /// <summary>Enciende las secciones de la sub-pagina actual y apaga el resto.</summary>
         static void Pintar()
         {
@@ -844,7 +860,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (destino < 0 || destino >= subpaginas) return true;   // se sale: cambia de hoja
 
             subpagina = destino;
-            Pintar();
+            PintarYMedir();
             Log($"sub-pagina {subpagina + 1} de {subpaginas}");
             return false;
         }
@@ -881,7 +897,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPostfix]
         static void TrasRefrescar(CompendiumSectionChecklist __instance)
         {
-            if (Enabled && subpaginas > 1 && EstamosEnLaEstandar(__instance)) Pintar();
+            if (Enabled && subpaginas > 1 && EstamosEnLaEstandar(__instance)) PintarYMedir();
         }
 
         static bool EstamosEnLaEstandar(CompendiumSectionChecklist seccion)
