@@ -4,7 +4,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "frutos"
 name = "CustomClanUIFixes"
-versionNumber = "0.2.1"
+versionNumber = "0.3.0"
 description = "UI fixes for playing with many modded clans installed"
 websiteUrl = "https://github.com/David-defrutos/mt2-custom-clan-ui-fixes"
 containsNsfwContent = false
@@ -25,3 +25,4 @@ target = "mt2_custom_clan_ui_fixes.Plugin.dll"
 [publish]
 repository = "https://thunderstore.io"
 communities = [ "monster-train-2" ]
+# 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/thunderstore.toml||versionNumber 0.2.1 -> 0.3.0

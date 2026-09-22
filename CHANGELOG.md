@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.0
+
+- **Logbook, Progress Record page**: one clan per row, paginated with the game's own arrows
+  (five clans a page), so the clans past the tenth can be seen at all — before, they were
+  drawn below the bottom edge of the sheet. The "Page N of M" label counts those pages.
+- The ally banners keep their full size instead of being squeezed until they overlap, and
+  the clan's colour ribbon runs all the way to the card mastery meter.
+- The card mastery meter grows in columns instead of spilling out of its section when a
+  clan has more than 42 cards, and every clan gets the same 12 x 5 grid so the meters line up.
+- The DLC page (Railforged, Wurmkin) gets the same layout.
+- **Logbook, card filters**: once there are enough clans for a third row of clan buttons,
+  the ornament that closes the bottom of the filter panel was drawn right across the search
+  box, over the text you type. It is now switched off, and only when it actually overlaps.
+- New `[ProgressGrid]` and `[CardFilter]` sections in the config file, each with
+  `Enabled = false` to leave the screen exactly as the game draws it.
+- Logging is now **off by default** in every section (`Verbose = false`). A config file from
+  an earlier version keeps the value it already had: set `Verbose = false` by hand in
+  `[LogbookFit]` and `[ArtifactsPaging]` if you want a quiet log.
+
 ## v0.2.1
 
 - Store page only: screenshots of the artifacts page and of its second page, the champion
@@ -29,3 +48,4 @@
   that is 3 columns of 6 at 91% of the original size.
 - Everything is configurable in `BepInEx\config\mt2_custom_clan_ui_fixes.Plugin.cfg`, and
   `Enabled = false` leaves the screen exactly as the game draws it.
+<!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/CHANGELOG.md||entrada v0.3.0: hoja de progreso, caja de busqueda del filtro, secciones [ProgressGrid] y [CardFilter], traza apagada por defecto -->
