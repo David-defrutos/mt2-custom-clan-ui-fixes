@@ -74,6 +74,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
         static bool volcado;
         static bool avisado;   // el "no he encontrado nada", una vez por partida
+        static int apagados;   // en todas las pasadas: en la ultima ya no queda nada que apagar
 
         // ------------------------------------------------------------------ montaje
 
@@ -162,13 +163,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
                         b.enabled = false;
                         tocados++;
+                        apagados++;
                         Log($"adorno sobre la caja de busqueda: \"{Ruta(t, raiz)}\"" +
                             $" {otra.width:0}x{otra.height:0} ({c.GetType().Name}) -> apagado" +
                             $" [caja {caja.width:0}x{caja.height:0}]");
                     }
                 }
 
-                if (tocados == 0 && ultima && !avisado)
+                if (apagados == 0 && ultima && !avisado)
                 {
                     avisado = true;
                     Log("no se ha encontrado nada que tape la caja de busqueda" +
@@ -182,6 +184,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// <summary>
         /// Si `otra` tapa la caja lo bastante como para ser el adorno. La tercera cautela -que
         /// no sea mas alta que el doble de la caja- es la que deja fuera fondos y paneles.
+        ///
+        /// A lo ancho vale cualquiera de las dos: que cruce un 30% de la caja (las rayas, 164
+        /// px) **o** que la mitad de si misma este encima (el rombo, 44 px sobre una caja de
+        /// 368: con solo la primera regla se quedaba, medido el 22-sep).
         /// </summary>
         static bool Cruza(Rect caja, Rect otra)
         {
@@ -191,7 +197,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             float ancho = Mathf.Min(caja.xMax, otra.xMax) - Mathf.Max(caja.xMin, otra.xMin);
             if (alto <= 0f || ancho <= 0f) return false;
 
-            return alto >= caja.height * MinOverlap && ancho >= caja.width * 0.3f;
+            return alto >= caja.height * MinOverlap
+                && (ancho >= caja.width * 0.3f || ancho >= otra.width * 0.5f);
         }
 
         // ------------------------------------------------------------------ utilidades
@@ -303,3 +310,4 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-22-2245||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||fichero nuevo: apaga el adorno que cruza la caja de busqueda del panel de filtros de cartas (postfix de SearchFilterUI.SetUp), con volcado del arbol del panel
 // 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||valores iniciales Verbose true->false y DumpTree true->false, igual que en Plugin.cs
 // 2026-09-22-2341||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||el ajuste pasa de SetUp (panel apagado, todo a 0x0) a un vigilante VigiaBusqueda que ajusta en cada OnEnable; se saltan objetos apagados; volcado despues del layout; aviso de 'nada encontrado' solo una vez
+// 2026-09-23-0000||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||Cruza acepta tambien lo que tiene la mitad de su ancho encima de la caja (el rombo de 44 px se quedaba); el aviso de 'nada encontrado' cuenta lo apagado en todas las pasadas, no solo en la ultima
