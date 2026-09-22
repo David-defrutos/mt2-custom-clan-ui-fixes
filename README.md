@@ -67,7 +67,7 @@ past the edge of the sheet and cannot be reached at all.</sub>
 | `HeightBudget` | `0` | usable page height in px; 0 = detect it (measured: 1000) |
 | `WidthBudget` | `0` | usable width in px; 0 = detect it (measured: 400). At `440` the diamonds keep their original size, spilling slightly outside the nominal area |
 | `RetryFrames` | `5` | frames the layout pass is retried after the screen opens |
-| `Verbose` | `true` | log what it measures and applies to `LogOutput.log` |
+| `Verbose` | `false` | log what it measures and applies to `LogOutput.log` |
 
 The retry is not a blind workaround: the game fills the crew column **one or more frames
 after** the screen opens, so the first pass only sees half the clans. The log line is only
@@ -81,7 +81,7 @@ Section `[ArtifactsPaging]`:
 | `ColumnsPerPage` | `0` | columns per page; 0 = as many as the measured width fits |
 | `WidthBudget` | `0` | usable sheet width in px; 0 = detect it. If the split comes out short or long, take the width from the `zona:` line in the log and set it here |
 | `RetryFrames` | `5` | frames the split is retried after the screen opens |
-| `Verbose` | `true` | log what it measures and how it splits |
+| `Verbose` | `false` | log what it measures and how it splits |
 
 ## Relation to CustomClanHelper
 
@@ -156,7 +156,7 @@ genericos ocupa cuatro veces lo que una de clan.
 | `HeightBudget` | `0` | alto util de la hoja en px; 0 = detectarlo (medido: 1000) |
 | `WidthBudget` | `0` | ancho util en px; 0 = detectarlo (medido: 400). A `440` los rombos quedan a tamano original, saliendose un poco del area nominal |
 | `RetryFrames` | `5` | frames que se reintenta la colocacion tras abrir la pantalla |
-| `Verbose` | `true` | traza en `LogOutput.log`, con las medidas y el factor aplicado |
+| `Verbose` | `false` | traza en `LogOutput.log`, con las medidas y el factor aplicado |
 
 El reintento no es un parche a ciegas: el juego crea los botones de la columna de tripulacion
 **uno o mas frames despues** de abrir la pantalla, asi que la primera colocacion solo ve la
@@ -170,7 +170,7 @@ Seccion `[ArtifactsPaging]`:
 | `ColumnsPerPage` | `0` | columnas por pagina; 0 = las que quepan segun el ancho medido |
 | `WidthBudget` | `0` | ancho util de la hoja en px; 0 = detectarlo. Si el reparto se queda corto o largo, coge el ancho de la linea `zona:` del log y fijalo aqui |
 | `RetryFrames` | `5` | frames que se reintenta el reparto tras abrir la pantalla |
-| `Verbose` | `true` | traza en `LogOutput.log` de lo que mide y de como reparte |
+| `Verbose` | `false` | traza en `LogOutput.log` de lo que mide y de como reparte |
 
 ## Relacion con CustomClanHelper
 
@@ -186,3 +186,4 @@ Ver `COMO-COMPILAR.md`. El DLL lo compila GitHub Actions con cada push que toque
 ## Licencia
 
 MIT.
+<!-- 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||Verbose true->false en las cuatro tablas de ajustes (ingles y espanol, pagina de mejoras y de artefactos) -->

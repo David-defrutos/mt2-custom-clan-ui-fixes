@@ -49,8 +49,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "LogbookFit", "RetryFrames", 5,
                 "Frames que se reintenta la colocacion tras abrir la pantalla. El juego crea los botones de la columna de tripulacion uno o mas frames despues.");
             var cfgTraza = Config.Bind(
-                "LogbookFit", "Verbose", true,
-                "Escribe en LogOutput.log lo que mide y lo que ajusta.");
+                "LogbookFit", "Verbose", false,
+                "Escribe en LogOutput.log lo que mide y lo que ajusta. Apagado en la version publicada; ponlo a true para depurar.");
 
             LogbookClanFit.Enabled = cfgActivo.Value;
             LogbookClanFit.MinScale = cfgEscalaMinima.Value;
@@ -79,8 +79,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ArtifactsPaging", "RetryFrames", 10,
                 "Frames que se reintenta el reparto tras abrir la pantalla, mientras el juego termina de crear y colocar las columnas. Las medidas no se dan por buenas hasta que dos pasadas seguidas coinciden, asi que conviene que sobren.");
             var cfgArtTraza = Config.Bind(
-                "ArtifactsPaging", "Verbose", true,
-                "Escribe en LogOutput.log lo que mide y como reparte.");
+                "ArtifactsPaging", "Verbose", false,
+                "Escribe en LogOutput.log lo que mide y como reparte. Apagado en la version publicada; ponlo a true para depurar.");
 
             LogbookArtifactsPaging.Enabled = cfgArtActivo.Value;
             LogbookArtifactsPaging.ColumnsPerPage = cfgArtColumnas.Value;
@@ -99,8 +99,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "RowsPerPage", 0,
                 "Filas por hoja. 0 = las que quepan de alto (con la celda del juego, 5).");
             var cfgProgTraza = Config.Bind(
-                "ProgressGrid", "Verbose", true,
-                "Escribe en LogOutput.log la rejilla, el reparto en sub-paginas y el detalle de las primeras secciones.");
+                "ProgressGrid", "Verbose", false,
+                "Escribe en LogOutput.log la rejilla, el reparto en sub-paginas y el detalle de las primeras secciones. Apagado en la version publicada; ponlo a true para depurar.");
             var cfgProgDetalle = Config.Bind(
                 "ProgressGrid", "DetailSections", 0,
                 "Cuantas secciones de clan se vuelcan con todo el detalle. 0 = ninguna. Solo para depurar.");
@@ -171,11 +171,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "CardFilter", "Enabled", true,
                 "Despeja la caja de busqueda del panel de filtros de cartas: por encima le pasa un adorno -la greca con el rombo que separa las secciones- y el texto que escribes queda cruzado por ella.");
             var cfgFiltroTraza = Config.Bind(
-                "CardFilter", "Verbose", true,
-                "Escribe en LogOutput.log que adorno ha apagado y de que tamano era.");
+                "CardFilter", "Verbose", false,
+                "Escribe en LogOutput.log que adorno ha apagado y de que tamano era. Apagado en la version publicada; ponlo a true para depurar.");
             var cfgFiltroArbol = Config.Bind(
-                "CardFilter", "DumpTree", true,
-                "Vuelca una vez el arbol del panel de filtros, con nombres, medidas y componentes. Es lo que permite saber que objeto es el adorno si el automatismo no acierta. Ponlo a false cuando ya este afinado.");
+                "CardFilter", "DumpTree", false,
+                "Vuelca una vez el arbol del panel de filtros, con nombres, medidas y componentes. Es lo que permite saber que objeto es el adorno si el automatismo no acierta. Solo para depurar.");
             var cfgFiltroDentro = Config.Bind(
                 "CardFilter", "AlsoInside", false,
                 "Buscar el adorno tambien DENTRO del propio SearchFilterUI. Por defecto no, porque ahi cuelgan el fondo y el marco de la caja y apagarlos la dejaria invisible. Ponlo a true solo si el log dice que no ha encontrado nada.");
@@ -202,3 +202,4 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
 // 2026-09-22-2233||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||MeterColumns 9->12 y MeterRows 6->5 en Config.Bind, y su descripcion (54 -> 60 cartas)
 // 2026-09-22-2245||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||seccion [CardFilter] nueva en el config (Enabled, Verbose, DumpTree, AlsoInside, MinOverlap, Levels) y volcado a CardFilterSearch
+// 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||Verbose true->false en las cuatro secciones (LogbookFit, ArtifactsPaging, ProgressGrid, CardFilter) y CardFilter.DumpTree true->false: valores por defecto de la version publicada

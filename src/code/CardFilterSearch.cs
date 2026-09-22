@@ -34,6 +34,23 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     /// Se apaga el componente que pinta (`enabled = false`), no el objeto: asi el layout no se
     /// entera y no se mueve nada de sitio.
     ///
+    /// **Lo que es, medido el 22-sep con el volcado del arbol**: `Content/Bottom divider`
+    /// (400x80), el remate de abajo del panel, con tres imagenes: `divider left` 164x28,
+    /// `divider center` 44x44 -el rombo- y `divider right` 164x28 -la cruz de la punta-. Es
+    /// **hermano** de `Search filter` dentro de `Content`, asi que la cautela 1 no lo protege.
+    ///
+    /// **Y por que la primera version no hacia nada**: `SetUp` corre con el panel **apagado**.
+    /// En ese momento todo mide 0x0 -el volcado lo dejo claro: 0x0 hasta el ultimo boton-, y
+    /// como el objeto no esta activo tampoco se podia encolar el reintento. Se media una vez,
+    /// a ciegas, y ya. Ahora un vigilante (`VigiaBusqueda`) se cuelga del propio
+    /// `SearchFilterUI` y ajusta **cada vez que el panel se enciende**, unos frames despues,
+    /// cuando el layout ya ha colocado las cosas. Es la regla 4 de
+    /// `docs/referencia/unity-ui-layouts.md` otra vez: un objeto apagado no pasa por el layout.
+    ///
+    /// Tambien se saltan los objetos apagados al buscar: la lista desplegable de `Mastery`
+    /// esta cerrada (apagada) con un rect viejo que cae encima de la caja, y apagarle las
+    /// imagenes la dejaria sin fondo al abrirla.
+    ///
     /// Para desactivarlo: [CardFilter] Enabled = false en el config de BepInEx.
     /// </summary>
     [HarmonyPatch]
@@ -41,8 +58,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     {
         // --- ajustes, los rellena Plugin.Awake desde el config de BepInEx ---
         public static bool Enabled = true;
-        public static bool Verbose = true;
-        public static bool DumpTree = true;      // volcar el arbol del panel una vez
+        public static bool Verbose = false;      // en la publicada, apagado; en local, en el .cfg
+        public static bool DumpTree = false;     // volcar el arbol del panel una vez
         public static bool AlsoInside = false;   // mirar tambien dentro del SearchFilterUI
         public static float MinOverlap = 0.25f;  // cuanto del alto de la caja ha de tapar
         public static int Levels = 1;            // niveles que se sube para buscar el adorno
@@ -56,6 +73,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly HashSet<string> Dibujan = new() { "Image", "RawImage" };
 
         static bool volcado;
+        static bool avisado;   // el "no he encontrado nada", una vez por partida
 
         // ------------------------------------------------------------------ montaje
 
@@ -65,30 +83,35 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         {
             if (!Enabled || __instance == null) return;
 
-            Ajustar(__instance);
-
-            // Como en las otras pantallas: el layout del panel se rehace unos frames despues
-            // de montarlo, y hasta entonces las medidas son las de antes.
-            if (__instance.isActiveAndEnabled)
+            // El panel se monta APAGADO: aqui todo mide 0x0 y no se puede encolar nada. El
+            // vigilante ajusta cada vez que se enciende.
+            try
             {
-                try { __instance.StartCoroutine(AjustarUnosFrames(__instance)); }
-                catch (Exception e) { Log("no se pudo encolar el reintento: " + e.Message, true); }
+                var vigia = __instance.GetComponent<VigiaBusqueda>();
+                if (vigia == null) vigia = __instance.gameObject.AddComponent<VigiaBusqueda>();
+                vigia.ui = __instance;
+
+                // Si ya estaba encendido, su OnEnable salto al anadirlo, antes de tener `ui`.
+                if (__instance.isActiveAndEnabled) vigia.Arrancar();
             }
+            catch (Exception e) { Log("no se pudo colgar el vigilante del panel: " + e.Message, true); }
         }
 
-        static IEnumerator AjustarUnosFrames(SearchFilterUI ui)
+        internal static IEnumerator AjustarUnosFrames(SearchFilterUI ui)
         {
+            // Como en las otras pantallas: el layout se rehace unos frames despues de
+            // encenderse, y hasta entonces las medidas son las de antes.
             for (int i = 1; i <= 20; i++)
             {
                 yield return null;
                 if (ui == null) yield break;
-                if (i <= 3 || i == 10 || i == 20) Ajustar(ui);
+                if (i <= 3 || i == 10 || i == 20) Ajustar(ui, i == 20);
             }
         }
 
         // ------------------------------------------------------------------ el arreglo
 
-        static void Ajustar(SearchFilterUI ui)
+        static void Ajustar(SearchFilterUI ui, bool ultima)
         {
             try
             {
@@ -98,14 +121,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 Transform raiz = ui.transform;
                 for (int i = 0; i < Levels && raiz.parent != null; i++) raiz = raiz.parent;
 
+                Rect caja = Caja(raiz, rtCampo);
+                if (caja.height <= 1f) return;   // el layout aun no ha corrido
+
+                // El volcado, DESPUES del layout: el primero salio entero a 0x0.
                 if (DumpTree && !volcado)
                 {
                     volcado = true;
                     Volcar(raiz, rtCampo);
                 }
-
-                Rect caja = Caja(raiz, rtCampo);
-                if (caja.height <= 1f) return;   // el layout aun no ha corrido
 
                 Transform? boton = (FBoton?.GetValue(ui) as Component)?.transform;
 
@@ -114,6 +138,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 {
                     if (t == null || t == rtCampo) continue;
                     if (t is not RectTransform rt) continue;
+
+                    // Lo apagado no se ve y su rect es viejo. La lista de Mastery, cerrada,
+                    // cae encima de la caja: apagarle el fondo la estropearia al abrirla.
+                    if (!t.gameObject.activeInHierarchy) continue;
 
                     // Cautela 1: el marco y el fondo de la caja cuelgan del propio
                     // SearchFilterUI. Fuera de el, lo que solape es del panel.
@@ -140,10 +168,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     }
                 }
 
-                if (tocados == 0)
+                if (tocados == 0 && ultima && !avisado)
+                {
+                    avisado = true;
                     Log("no se ha encontrado nada que tape la caja de busqueda" +
                         (AlsoInside ? "." : ": solo se ha mirado FUERA del SearchFilterUI." +
                                             " Prueba [CardFilter] AlsoInside = true, o sube Levels."));
+                }
             }
             catch (Exception e) { Log("fallo despejando la caja de busqueda: " + e.Message, true); }
         }
@@ -249,6 +280,26 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             else if (Verbose) Plugin.Logger.LogInfo("[CardFilter] " + mensaje);
         }
     }
+
+    /// <summary>
+    /// Se cuelga del `SearchFilterUI` y lanza el ajuste cada vez que el panel se enciende. Hace
+    /// falta porque `SetUp` corre con el panel apagado: ni hay medidas ni se puede arrancar una
+    /// corrutina desde ahi.
+    /// </summary>
+    internal sealed class VigiaBusqueda : MonoBehaviour
+    {
+        internal SearchFilterUI? ui;
+
+        void OnEnable() => Arrancar();
+
+        internal void Arrancar()
+        {
+            if (ui == null || !CardFilterSearch.Enabled || !isActiveAndEnabled) return;
+            StartCoroutine(CardFilterSearch.AjustarUnosFrames(ui));
+        }
+    }
 }
 
 // 2026-09-22-2245||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||fichero nuevo: apaga el adorno que cruza la caja de busqueda del panel de filtros de cartas (postfix de SearchFilterUI.SetUp), con volcado del arbol del panel
+// 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||valores iniciales Verbose true->false y DumpTree true->false, igual que en Plugin.cs
+// 2026-09-22-2341||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/CardFilterSearch.cs||el ajuste pasa de SetUp (panel apagado, todo a 0x0) a un vigilante VigiaBusqueda que ajusta en cada OnEnable; se saltan objetos apagados; volcado despues del layout; aviso de 'nada encontrado' solo una vez
