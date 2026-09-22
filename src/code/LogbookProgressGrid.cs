@@ -50,7 +50,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static int Columns = 1;        // columnas de la rejilla; 2 = como el juego
         public static int RowsPerPage = 0;    // filas por hoja; 0 = las que quepan de alto
         public static bool Verbose = true;
-        public static int DetailSections = 1; // secciones que se vuelcan con todo el detalle
+        public static int DetailSections = 0; // secciones que se vuelcan con todo el detalle
         public static bool WidenSections = true; // estirar la seccion a la celda
         public static bool FreeFlagWidth = true; // soltar el ancho de las banderas
         public static float FlagSpacing = 6f;    // separacion entre banderas
@@ -64,16 +64,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         ///                            `Ensanchar`.
         /// </summary>
         public static string Layout = "inflow";
-        public static float PlaqueWidth = 0f;        // 0 = lo que sobre; >0 = fijo
+        public static float PlaqueWidth = 280f;      // 0 = lo que sobre; >0 = fijo (medido en partida)
         public static bool StretchPlaqueFill = true; // estirar la franja de color de la placa
-        public static bool DumpTree = true;          // volcar el arbol de la primera seccion
+        public static bool DumpTree = false;          // volcar el arbol de la primera seccion
         public static bool BalanceFlagRows = true;   // repartir las banderas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
         public static float RibbonExtra = 0f;        // px de mas para la cinta de color
-        public static float FlagOffsetX = 0f;        // px que se mueven las banderas (- = izquierda)
+        public static float FlagOffsetX = -280f;        // px que se mueven las banderas (- = izquierda)
         public static bool FixMasteryMeter = true;   // que el medidor crezca en columnas
-        public static int MeterColumns = 9;          // columnas fijas del medidor
-        public static int MeterRows = 6;             // filas que caben de alto
+        public static int MeterColumns = 12;         // columnas fijas del medidor
+        public static int MeterRows = 5;             // filas que caben de alto
 
         static readonly FieldInfo? FPaginas =
             AccessTools.Field(typeof(CompendiumSectionChecklist), "checklistPages");
@@ -536,7 +536,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         /// <summary>
-        /// Cuantas columnas lleva el medidor de TODOS los clanes. Son `MeterColumns` (9)
+        /// Cuantas columnas lleva el medidor de TODOS los clanes. Son `MeterColumns` (12)
         /// salvo que algun clan instalado necesite mas para no pasarse de `MeterRows` filas,
         /// que es lo que cabe de alto en la seccion.
         /// </summary>
@@ -573,8 +573,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// **de alto no hay sitio**: la rejilla se sale de la seccion y los rectangulos se
         /// pisan. De ancho, en cambio, sobra desde que la hoja va a una columna.
         ///
-        /// Asi que se le fija **la misma cuadricula a todos los clanes**: `MeterColumns` (9)
-        /// columnas, que a 6 filas dan sitio para 54 cartas. Al que tiene 42 le quedan las
+        /// Asi que se le fija **la misma cuadricula a todos los clanes**: `MeterColumns` (12)
+        /// columnas, que a 5 filas dan sitio para 60 cartas. Al que tiene 42 le quedan las
         /// celdas del final vacias, y es justo lo que se quiere: todos los medidores miden lo
         /// mismo y quedan a plomo, en vez de cada uno con su ancho (105, 121, 136...) y el
         /// borde derecho irregular.
@@ -1322,3 +1322,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
     }
 }
+
+// 2026-09-22-2233||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/LogbookProgressGrid.cs||MeterColumns 9->12 y MeterRows 6->5: el medidor de cartas pasa de 54 huecos (9x6) a 60 (12x5)

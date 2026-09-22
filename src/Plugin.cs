@@ -102,8 +102,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "Verbose", true,
                 "Escribe en LogOutput.log la rejilla, el reparto en sub-paginas y el detalle de las primeras secciones.");
             var cfgProgDetalle = Config.Bind(
-                "ProgressGrid", "DetailSections", 1,
-                "Cuantas secciones de clan se vuelcan con todo el detalle.");
+                "ProgressGrid", "DetailSections", 0,
+                "Cuantas secciones de clan se vuelcan con todo el detalle. 0 = ninguna. Solo para depurar.");
             var cfgProgEnsanchar = Config.Bind(
                 "ProgressGrid", "WidenSections", true,
                 "Estira la seccion de clan y el contenedor de aliados hasta el ancho nuevo de la celda. A false, la celda se ensancha pero dentro todo sigue pegado a la izquierda.");
@@ -114,8 +114,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "Layout", "inflow",
                 "Como se reparte el ancho dentro de la seccion. \"inflow\" = el contenedor de aliados entra en la fila y la placa se queda lo que sobra, con su franja de color llegando hasta las banderas. \"overlay\" = el intento de ensanchar la placa dejando las banderas encima, que se descarto porque el fondo de color no crece y las banderas tapan el nombre del clan.");
             var cfgProgPlaca = Config.Bind(
-                "ProgressGrid", "PlaqueWidth", 0f,
-                "Ancho de la placa del retrato en el modo \"inflow\". 0 = todo lo que sobre despues de las banderas y la coleccion de cartas, que es lo que hace que la franja de color llegue hasta las banderas. Un numero fijo la recorta.");
+                "ProgressGrid", "PlaqueWidth", 280f,
+                "Ancho de la placa del retrato en el modo \"inflow\". 280 es el valor ajustado en partida: deja el retrato y el nombre, y las banderas empiezan justo despues. 0 = todo lo que sobre.");
             var cfgProgReparto2 = Config.Bind(
                 "ProgressGrid", "BalanceFlagRows", true,
                 "Reparte las banderas de aliados a mitades entre las dos filas (con 18, 9 y 9 en vez de 12 y 6), para que la fila larga quepa dentro de la cinta de color. Mueve objetos de padre, igual que hace el juego: si aparecen banderas duplicadas o que no responden, ponlo a false.");
@@ -129,16 +129,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "FixMasteryMeter", true,
                 "El medidor de cartas dominadas viene con 7 columnas fijas, justo para las 42 cartas de un clan del juego base. Un clan con mas cartas necesita otra fila y de alto no cabe: se sale y los rectangulos se pisan. Con esto se fijan las filas y la rejilla crece a lo ancho, que es donde hay sitio.");
             var cfgProgColsMedidor = Config.Bind(
-                "ProgressGrid", "MeterColumns", 9,
-                "Columnas del medidor de cartas, iguales para todos los clanes. A 6 filas dan sitio para 54 cartas; al clan que tenga menos le quedan las celdas del final vacias, que es lo que hace que todos los medidores queden a plomo.");
+                "ProgressGrid", "MeterColumns", 12,
+                "Columnas del medidor de cartas, iguales para todos los clanes. A 5 filas dan sitio para 60 cartas; al clan que tenga menos le quedan las celdas del final vacias, que es lo que hace que todos los medidores queden a plomo.");
             var cfgProgFilasMedidor = Config.Bind(
-                "ProgressGrid", "MeterRows", 6,
+                "ProgressGrid", "MeterRows", 5,
                 "Filas que caben de alto en la seccion. Solo se usa como tope: si algun clan no cabe en MeterColumns x MeterRows, se anaden columnas para todos antes que dejar que se salga.");
             var cfgProgCorrer = Config.Bind(
-                "ProgressGrid", "FlagOffsetX", 0f,
+                "ProgressGrid", "FlagOffsetX", -280f,
                 "Pixeles que se mueven las banderas de aliados dentro de la seccion. Negativo = hacia la izquierda. Se aplica como relleno del layout, que es lo unico que el propio layout no deshace.");
             var cfgProgVolcado = Config.Bind(
-                "ProgressGrid", "DumpTree", true,
+                "ProgressGrid", "DumpTree", false,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
             var cfgProgFranja = Config.Bind(
                 "ProgressGrid", "StretchPlaqueFill", true,
@@ -167,9 +167,38 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressGrid.MeterRows = cfgProgFilasMedidor.Value;
             LogbookProgressGrid.FlagSpacing = cfgProgSeparacion.Value;
 
+            var cfgFiltroActivo = Config.Bind(
+                "CardFilter", "Enabled", true,
+                "Despeja la caja de busqueda del panel de filtros de cartas: por encima le pasa un adorno -la greca con el rombo que separa las secciones- y el texto que escribes queda cruzado por ella.");
+            var cfgFiltroTraza = Config.Bind(
+                "CardFilter", "Verbose", true,
+                "Escribe en LogOutput.log que adorno ha apagado y de que tamano era.");
+            var cfgFiltroArbol = Config.Bind(
+                "CardFilter", "DumpTree", true,
+                "Vuelca una vez el arbol del panel de filtros, con nombres, medidas y componentes. Es lo que permite saber que objeto es el adorno si el automatismo no acierta. Ponlo a false cuando ya este afinado.");
+            var cfgFiltroDentro = Config.Bind(
+                "CardFilter", "AlsoInside", false,
+                "Buscar el adorno tambien DENTRO del propio SearchFilterUI. Por defecto no, porque ahi cuelgan el fondo y el marco de la caja y apagarlos la dejaria invisible. Ponlo a true solo si el log dice que no ha encontrado nada.");
+            var cfgFiltroSolape = Config.Bind(
+                "CardFilter", "MinOverlap", 0.25f,
+                "Cuanto del alto de la caja tiene que tapar algo para darlo por adorno. 0,25 = una cuarta parte. Subelo si apaga algo que no debia.");
+            var cfgFiltroNiveles = Config.Bind(
+                "CardFilter", "Levels", 1,
+                "Niveles que se sube desde el SearchFilterUI para buscar el adorno. Con 1 se mira la seccion Search entera; subelo a 2 si el adorno cuelga del panel de filtros completo.");
+
+            CardFilterSearch.Enabled = cfgFiltroActivo.Value;
+            CardFilterSearch.Verbose = cfgFiltroTraza.Value;
+            CardFilterSearch.DumpTree = cfgFiltroArbol.Value;
+            CardFilterSearch.AlsoInside = cfgFiltroDentro.Value;
+            CardFilterSearch.MinOverlap = cfgFiltroSolape.Value;
+            CardFilterSearch.Levels = cfgFiltroNiveles.Value;
+
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
         }
     }
 }
+
+// 2026-09-22-2233||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||MeterColumns 9->12 y MeterRows 6->5 en Config.Bind, y su descripcion (54 -> 60 cartas)
+// 2026-09-22-2245||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||seccion [CardFilter] nueva en el config (Enabled, Verbose, DumpTree, AlsoInside, MinOverlap, Levels) y volcado a CardFilterSearch
