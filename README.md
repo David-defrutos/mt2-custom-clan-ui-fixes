@@ -155,9 +155,8 @@ Section `[CardFilter]`:
 [Custom-Clan-Helper](https://github.com/Monster-Train-2-Modding-Group/Custom-Clan-Helper)
 also works on the logbook: it lists the champion upgrade and artifacts pages in its TODO
 (*"Champion Upgrade Page in logbook is wonky"*, *"Artifact page needs pagination support"*),
-and it gives modded clans a progress record page of their own. The progress record layout of
-this mod was built and tested **without** Custom-Clan-Helper installed, so that extra page
-has not been checked with it yet. The other screens are unaffected.
+and it gives modded clans a progress record page of their own. Both mods work together: this
+one has been tested with Custom-Clan-Helper installed, progress record included.
 
 ## Building
 
@@ -302,9 +301,8 @@ Seccion `[CardFilter]`:
 [Custom-Clan-Helper](https://github.com/Monster-Train-2-Modding-Group/Custom-Clan-Helper)
 tambien trabaja sobre el logbook: tiene las paginas de mejoras y de artefactos en su TODO
 (*"Champion Upgrade Page in logbook is wonky"*, *"Artifact page needs pagination support"*)
-y da a los clanes modeados una hoja de progreso propia. El formato de la hoja de progreso de
-este mod se hizo y se probo **sin** Custom-Clan-Helper instalado, asi que esa hoja extra aun
-no se ha comprobado con el. Las demas pantallas no se ven afectadas.
+y da a los clanes modeados una hoja de progreso propia. Los dos mods funcionan juntos: este se
+ha probado con Custom-Clan-Helper instalado, hoja de progreso incluida.
 
 ## Compilar
 
@@ -315,3 +313,4 @@ Ver `COMO-COMPILAR.md`. El DLL lo compila GitHub Actions con cada push que toque
 MIT.
 <!-- 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||Verbose true->false en las cuatro tablas de ajustes (ingles y espanol, pagina de mejoras y de artefactos) -->
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||0.3.0: secciones nuevas de la hoja de progreso y de la caja de busqueda (ingles y espanol) con sus dos capturas, tablas [ProgressGrid] y [CardFilter], [ArtifactsPaging] RetryFrames 5->10 y Balance anadido, pies de captura a 19 clanes, relacion con Custom-Clan-Helper reescrita -->
+<!-- 2026-09-23-0058||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||relacion con Custom-Clan-Helper (ingles y espanol): fuera la advertencia de "no probado juntos"; probado el 23-sep con CCH activo, hoja de progreso incluida -->
