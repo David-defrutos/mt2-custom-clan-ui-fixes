@@ -315,30 +315,33 @@ MIT.
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||0.3.0: secciones nuevas de la hoja de progreso y de la caja de busqueda (ingles y espanol) con sus dos capturas, tablas [ProgressGrid] y [CardFilter], [ArtifactsPaging] RetryFrames 5->10 y Balance anadido, pies de captura a 19 clanes, relacion con Custom-Clan-Helper reescrita -->
 <!-- 2026-09-23-0058||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||relacion con Custom-Clan-Helper (ingles y espanol): fuera la advertencia de "no probado juntos"; probado el 23-sep con CCH activo, hoja de progreso incluida -->
 
-## Soul Savior: combinaciones de clanes (0.4.4)
+## Soul Savior: combinaciones de clanes (0.4.5)
 
 Si existe el guardado de ExpandedWinTracker, el logbook añade una octava pestaña superior para Soul Savior, con cinco clanes por página y contador independiente. El registro normal agrupa también los clanes del DLC para aprovechar la última hoja. Conserva los retratos y banderas de aliados, muestra la máxima dificultad ganada como S0, S1, etc., y ofrece detalle por campeón en el tooltip de cada bandera. Un guion indica que no hay victoria registrada. El contador de la derecha indica aliados con alguna victoria / aliados disponibles.
 
 Lee BepInEx/config/ExpandedWinTracker.Plugin/extraMetagameSave.json al abrir cada página. ExpandedWinTracker sigue encargándose de registrar las victorias; esta integración no escribe en su guardado ni en el metajuego normal. Las victorias normales y las coronas no se sustituyen.
 
-Se puede desactivar con [SoulSavior] Enabled = false. Si no existe el guardado, no se añaden páginas. Si el fichero no puede leerse, se muestra un aviso y se ocultan los resultados para evitar mostrarlos como derrotas.
+Se puede desactivar con [SoulSavior] Enabled = false. ExpandedWinTracker se instala como dependencia; ejecuta el juego una vez para generar sus registros. Si todavía no existe el guardado, no se añade la pestaña. Si el fichero no puede leerse, se muestra un aviso y se ocultan los resultados para evitar mostrarlos como derrotas.
 
 Esta versión integra las combinaciones de clanes. La lista de victorias por alma todavía no tiene página propia.
 
 Compatible con los registros de ExpandedWinTracker, de Monster Train 2 Modding Group:
 https://github.com/Monster-Train-2-Modding-Group/Expanded-Win-Tracker
 
-Validación local: compilación contra las DLL instaladas del juego y pruebas del lector con registros duplicados, campos ausentes, dificultad cero, campeones distintos, dirección principal/aliado, JSON corrupto y el guardado real. La apariencia y la navegación deben comprobarse en el juego.
+El panel izquierdo resume las combinaciones ganadas, los clanes con victorias y la máxima dificultad. Los textos siguen el idioma elegido en el juego; hay traducciones para inglés, español, francés, alemán, italiano, portugués, polaco, ruso, japonés, coreano y chino simplificado y tradicional. Los idiomas sin traducción usan inglés.
 
 <!-- 2026-09-30-1935||codex-customclanuifixes-review||README.md||Documentar vista Soul Savior, lectura del tracker y limites de esta integracion -->
 <!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar pestaña independiente, cinco filas y agrupación DLC -->
 
-### Estado de la revisión 0.4.4 — 2026-09-30
-
-Instalada localmente y verificada mediante SHA256. La compilación contra las DLL instaladas terminó sin errores ni avisos. Pasan las pruebas de geometría, reparto de aliados, lectura de registros, paginación y del componente de pestañas con gráficos desplazados y layout tardío. David confirmó visualmente la 0.4.1; las capturas posteriores mostraron el solapamiento del octavo icono en la 0.4.2 y la 0.4.3. La 0.4.4 corrige la medición de cero detectada en el registro, pero la comprobación visual del encabezado sigue pendiente, al igual que la animación tras una victoria DLC.
-
-El detalle por versión se mantiene en [CHANGELOG.md](CHANGELOG.md). Este commit sube el código y la documentación a GitHub; el paquete 0.4.4 sigue sin publicarse en Thunderstore.
-
 <!-- 2026-09-30-2128||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar entrega 0.4.2, validaciones y pendientes; distinguir push de código de publicación Thunderstore -->
 
 <!-- 2026-09-30-2223||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Actualizar README del paquete a 0.4.4 con pruebas realizadas y comprobación visual pendiente -->
+
+## Soul Savior tracking dependency / Dependencia del seguimiento Soul Savior
+
+Soul Savior tracking uses **[ExpandedWinTracker by Conductor](https://thunderstore.io/c/monster-train-2/p/Conductor/ExpandedWinTracker/)**. It records the wins; CustomClanUIFixes reads and displays them without modifying its save file. Thanks to **Brandon / Conductor** for ExpandedWinTracker. The mod manager installs it and its dependencies automatically. Run the game once to generate the records.
+
+El seguimiento Soul Savior utiliza **ExpandedWinTracker by Conductor**: registra las victorias y CustomClanUIFixes las muestra sin modificar su guardado. Gracias a **Brandon / Conductor**. El gestor instala automáticamente el tracker y sus dependencias. Ejecuta el juego una vez para generar los registros.
+<!-- 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Explicar dependencia obligatoria ExpandedWinTracker, instalación automática y atribución Brandon/Conductor en español e inglés -->
+
+<!-- 2026-09-30-2242||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||README público 0.4.5: resumen lateral, idiomas y dependencia; retirar notas internas de pruebas e instalación -->

@@ -48,6 +48,28 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             return result;
         }
 
+        public (int Won, int Possible, int ClansWon, int ClanCount, int Best) Overview(IEnumerable<string> clanIds)
+        {
+            var ids = new HashSet<string>(clanIds);
+            ids.RemoveWhere(string.IsNullOrWhiteSpace);
+            int won = 0, possible = 0, clansWon = 0, best = -1;
+            foreach (var main in ids)
+            {
+                bool any = false;
+                foreach (var ally in ids)
+                {
+                    if (main == ally) continue;
+                    possible++;
+                    int level = Best(main, ally);
+                    if (level < 0) continue;
+                    won++;
+                    any = true;
+                    best = Math.Max(best, level);
+                }
+                if (any) clansWon++;
+            }
+            return (won, possible, clansWon, ids.Count, best);
+        }
         // -1 = sin victoria registrada; 0 tambien es una victoria valida.
         public int Get(string main, string ally, int champion)
             => wins.TryGetValue((main, ally, champion), out int level) ? level : -1;
@@ -65,3 +87,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-1931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Nueva integracion de lectura de ExpandedWinTracker y paginas Soul Savior por clan
 
 // 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Integracion Soul Savior 0.4.0 completada; consultas validadas y presentacion separada de victorias normales
+
+// 2026-09-30-2241||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Resumen por IDs distintos: parejas direccionales, sin duplicar campeones ni clanes y con ausencia distinta de victoria S0

@@ -65,6 +65,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
                 // Añadir solo cuando todas las paginas estan preparadas.
                 foreach (var view in added) target.Pages.Add(view);
+                target.BuildSidebar(classes, labelTemplate: LogbookSoulSavior.Field<TMP_Text>(template, "clanNameLabel")!);
                 target.SetIcon(save);
                 AccessTools.Method(typeof(PaginatedCompendiumSection), "RefreshPagination")
                     ?.Invoke(__instance, null);
@@ -135,7 +136,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             title = Label(label, grid, "Soul Savior title", 0f, 10f, 1400f, 28f, 24f);
             note = Label(label, grid, "Soul Savior note", 0f, -860f, 1400f, 28f, 20f);
             title.gameObject.SetActive(false); // La pestaña identifica el modo; se conserva el alto para cinco filas.
-            note.text = "Dificultad máxima ganada · Detalle por campeón en cada bandera";
+            note.text = SoulSaviorText.Get(0);
 
             foreach (var clan in classes)
             {
@@ -167,7 +168,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             catch (Exception e)
             {
                 foreach (var row in rows) row.gameObject.SetActive(false);
-                if (note != null) note.text = "No se pudieron mostrar los registros de Soul Savior.";
+                if (note != null) note.text = SoulSaviorText.Get(3);
                 Plugin.Logger.LogWarning("[SoulSavior] Error al abrir la pagina: " + e);
             }
         }
@@ -185,13 +186,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             catch (Exception e)
             {
                 foreach (var row in rows) row.gameObject.SetActive(false);
-                if (note != null) note.text = "No se pudieron leer los registros de Soul Savior.";
+                if (note != null) note.text = SoulSaviorText.Get(2);
                 Plugin.Logger.LogWarning("[SoulSavior] Guardado no disponible: " + e.Message);
                 return;
             }
             if (note != null) note.text = records.Count == 0
-                ? "Todavía no hay victorias de Soul Savior registradas."
-                : "Dificultad máxima ganada · Detalle por campeón en cada bandera";
+                ? SoulSaviorText.Get(1)
+                : SoulSaviorText.Get(0);
 
             for (int i = 0; i < rows.Count; i++)
             {
@@ -252,7 +253,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (card == null) continue;
                 int level = records.Get(data.mainClassData.GetID(), data.subClassData.GetID(), champion);
                 body.Append(card.GetName()).Append(": ")
-                    .Append(level < 0 ? "sin victoria registrada" : "dificultad " + level)
+                    .Append(level < 0 ? SoulSaviorText.Get(4) : SoulSaviorText.Get(5, level))
                     .AppendLine();
             }
             var tooltip = LogbookSoulSavior.Field<TooltipProviderComponent>(flag, "tooltipProvider");
@@ -276,10 +277,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var flags = row.GetComponentsInChildren<SubclanVictoryItem>(true)
                 .Where(f => f.gameObject.activeSelf && f.data != null).ToList();
             int won = flags.Count(f => records.Best(main.GetID(), f.data.subClassData.GetID()) >= 0);
-            label.text = won + " / " + flags.Count + "\naliados\nganados";
+            label.text = SoulSaviorText.Get(6, won, flags.Count);
         }
 
-        static TMP_Text Label(TMP_Text template, Transform parent, string name,
+        internal static TMP_Text Label(TMP_Text template, Transform parent, string name,
             float x, float y, float width, float height, float size)
         {
             // Un objeto nuevo conserva la fuente y el material, sin heredar el
@@ -333,6 +334,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     {
         internal readonly List<SoulSaviorChecklistPage> Pages = new();
         internal CompendiumTab? Tab;
+        readonly List<ClassData> sidebarClasses = new();
+        RectTransform? sidebar;
+        TMP_Text? sidebarBody;
+        TMP_Text? sidebarLegend;
+        TMP_Text? sidebarCredit;
+        TMP_Text? fontReference;
+        string sidebarLanguage = "";
         protected override int PageCount => Pages.Count;
         protected override void InitializeImpl() { }
         internal void Configure(CompendiumSectionChecklist source)
@@ -349,6 +357,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             base.RefreshPage();
             for (int i = 0; i < Pages.Count; i++) Pages[i].Toggle(i == currentPageIndex);
             mainNavLayer.SetDefaultGameSelectable(GetDefaultGameUISelectable());
+            if (fontReference != null)
+                foreach (var text in GetComponentsInChildren<TMP_Text>(true))
+                {
+                    text.font = fontReference.font;
+                    text.fontSharedMaterial = fontReference.fontSharedMaterial;
+                }
+            RefreshSidebar();
+            RefreshTabTooltip();
         }
         public override IGameUIComponent? GetDefaultGameUISelectable()
             => Pages.Count == 0 ? null : Pages[Mathf.Clamp(currentPageIndex, 0, Pages.Count - 1)]
@@ -356,19 +372,107 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         internal void SetIcon(SaveManager manager)
         {
             if (Tab == null) return;
-            var icon = Tab.GetComponentsInChildren<Image>(true)
-                .FirstOrDefault(i => i.name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0)
-                ?? Tab.GetComponentsInChildren<Image>(true).LastOrDefault(i => i.sprite != null);
             var soul = Resources.FindObjectsOfTypeAll<SoulData>()
-                .FirstOrDefault(s => s.GetSoulTypeIcon() != null);
-            if (icon != null && soul != null)
+                .Where(s => s.GetSoulTypeIcon() != null)
+                .OrderBy(s => s.GetSoulType()).ThenBy(s => s.GetID()).FirstOrDefault();
+            var icons = Tab.GetComponentsInChildren<Image>(true)
+                .Where(i => i.name.Equals("Icon", StringComparison.OrdinalIgnoreCase)
+                    || i.name.Equals("IconSelected", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (icons.Count == 0)
             {
-                icon.sprite = soul.GetSoulTypeIcon();
-                icon.color = Color.white;
+                var fallback = Tab.GetComponentsInChildren<Image>(true)
+                    .FirstOrDefault(i => i.name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0);
+                if (fallback != null) icons.Add(fallback);
             }
-            var tooltip = Tab.GetComponentInChildren<TooltipProviderComponent>(true);
+            foreach (var icon in icons)
+            {
+                if (soul != null) icon.sprite = soul.GetSoulTypeIcon();
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+                bool selected = icon.name.IndexOf("selected", StringComparison.OrdinalIgnoreCase) >= 0;
+                float size = selected ? 48f : 42f;
+                icon.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
+                icon.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
+                icon.rectTransform.localScale = Vector3.one;
+                icon.color = selected ? Color.white : new Color(0.72f, 0.82f, 0.86f, 1f);
+            }
+            RefreshTabTooltip();
+        }
+
+        void RefreshTabTooltip()
+        {
+            var tooltip = Tab?.GetComponentInChildren<TooltipProviderComponent>(true);
             if (tooltip != null) tooltip.SetTooltipLocalized("Soul Savior",
-                "Seguimiento de victorias por clan y aliado.", TooltipDesigner.TooltipDesignType.DefaultWide);
+                SoulSaviorText.Get(7), TooltipDesigner.TooltipDesignType.DefaultWide);
+        }
+
+        internal void BuildSidebar(List<ClassData> clans, TMP_Text labelTemplate)
+        {
+            sidebarClasses.AddRange(clans);
+            fontReference = labelTemplate;
+            var obj = new GameObject("Soul Savior overview", typeof(RectTransform));
+            obj.transform.SetParent(transform, false);
+            sidebar = (RectTransform)obj.transform;
+            sidebar.anchorMin = sidebar.anchorMax = new Vector2(0.5f, 0.5f);
+            sidebar.pivot = new Vector2(0f, 1f);
+            sidebar.sizeDelta = new Vector2(340f, 720f);
+            SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
+                "Soul Savior overview title", 0f, 0f, 340f, 64f, 36f).text = "Soul Savior";
+            sidebarBody = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
+                "Soul Savior overview totals", 0f, -90f, 340f, 340f, 25f);
+            sidebarLegend = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
+                "Soul Savior overview legend", 0f, -460f, 340f, 170f, 20f);
+            sidebarCredit = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
+                "Soul Savior overview credit", 0f, -665f, 340f, 80f, 18f);
+        }
+
+        void RefreshSidebar()
+        {
+            sidebarLanguage = I2.Loc.LocalizationManager.CurrentLanguageCode;
+            if (sidebarBody == null) return;
+            if (sidebarLegend != null) sidebarLegend.text = SoulSaviorText.Get(11);
+            if (sidebarCredit != null) sidebarCredit.text = SoulSaviorText.Get(12);
+            try
+            {
+                using var input = File.Open(LogbookSoulSavior.SavePath,
+                    FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                var records = SoulSaviorRecords.Read(input);
+                var (won, possible, clansWon, clanCount, best) = records.Overview(sidebarClasses.Select(c => c.GetID()));
+                sidebarBody.text = SoulSaviorText.Get(8) + "\n<size=38>" + won + " / " + possible
+                    + "</size>\n\n" + SoulSaviorText.Get(9) + "\n<size=34>" + clansWon + " / "
+                    + clanCount + "</size>\n\n" + SoulSaviorText.Get(10)
+                    + "\n<size=34>" + (best < 0 ? "—" : "S" + best) + "</size>";
+            }
+            catch (Exception e)
+            {
+                sidebarBody.text = SoulSaviorText.Get(2);
+                Plugin.Logger.LogWarning("[SoulSavior] Resumen no disponible: " + e.Message);
+            }
+        }
+
+        void LateUpdate()
+        {
+            if (sidebar == null || compendiumScreen == null) return;
+            if (sidebarLanguage != I2.Loc.LocalizationManager.CurrentLanguageCode)
+            {
+                RefreshPage(); // También reconstruye filas, etiquetas y tooltips en el idioma nuevo.
+            }
+            var root = compendiumScreen.transform as RectTransform;
+            var activeGrid = GetComponentsInChildren<GridLayoutGroup>()
+                .FirstOrDefault(g => g.name == "Soul Savior rows");
+            if (root == null || activeGrid == null) return;
+            var corners = new Vector3[4];
+            ((RectTransform)activeGrid.transform).GetWorldCorners(corners);
+            float listLeft = root.InverseTransformPoint(corners[0]).x;
+            float available = listLeft - root.rect.xMin - 48f;
+            sidebar.gameObject.SetActive(available >= 220f);
+            if (available < 220f) return;
+            float width = Mathf.Min(360f, available);
+            sidebar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            sidebar.position = root.TransformPoint(new Vector3(root.rect.xMin + 24f,
+                root.rect.yMax - 150f, 0f));
+            foreach (var text in sidebar.GetComponentsInChildren<TMP_Text>())
+                text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
         }
     }
 
@@ -544,3 +648,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2206||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||0.4.4: medir gráfico targetGraphic del botón; rechazar extremos 0/0 y reintentar antes del render hasta layout válido
 
 // 2026-09-30-2206||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Preferir imagen visible del rombo frente al controlador de tamaño cero; corregir traza de diagnóstico
+
+// 2026-09-30-2235||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Sustituir textos fijos por catálogo del idioma del jugador y preparar resumen lateral
+
+// 2026-09-30-2236||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Resumen lateral con combinaciones, clanes, dificultad, leyenda y crédito; iconos normal/seleccionado ajustados; cambio de idioma en vivo
+
+// 2026-09-30-2241||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar resumen probado del lector y actualizar fuente/material nativos al cambiar idioma

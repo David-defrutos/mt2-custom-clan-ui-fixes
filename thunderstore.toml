@@ -4,13 +4,14 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "frutos"
 name = "CustomClanUIFixes"
-versionNumber = "0.4.4"
+versionNumber = "0.4.5"
 description = "UI fixes for playing with many modded clans installed"
 websiteUrl = "https://github.com/David-defrutos/mt2-custom-clan-ui-fixes"
 containsNsfwContent = false
 
 [package.dependencies]
 BepInEx-BepInExPack = "5.4.2100"
+Conductor-ExpandedWinTracker = "0.0.1"
 
 [build]
 icon = "./icon.png"
@@ -34,3 +35,7 @@ communities = [ "monster-train-2" ]
 # 2026-09-30-2133||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Conservar versión original en comentarios históricos tras actualizar metadatos vigentes
 
 # 2026-09-30-2209||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Preparar metadatos y compilación 0.4.4 sin modificar comentarios históricos
+
+# 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Declarar ExpandedWinTracker 0.0.1 en dependencias de empaquetado
+
+# 2026-09-30-2242||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Preparar versión 0.4.5 con resumen, traducciones, icono y dependencia ExpandedWinTracker
