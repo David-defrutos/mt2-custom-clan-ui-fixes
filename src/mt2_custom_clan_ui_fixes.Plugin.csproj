@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>mt2_custom_clan_ui_fixes.Plugin</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>0.4.2</Version>
+    <Version>0.4.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,3 +32,9 @@
 <!-- 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Integracion Soul Savior 0.4.1 completada; consultas validadas y presentacion separada de victorias normales -->
 
 <!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Versión local de fuente 0.4.1 a 0.4.2 -->
+
+<!-- 2026-09-30-2132||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Preparar versión 0.4.3 para corrección de solapamiento de pestañas -->
+
+<!-- 2026-09-30-2133||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Conservar versión original en comentarios históricos tras actualizar metadatos vigentes -->
+
+<!-- 2026-09-30-2209||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Preparar metadatos y compilación 0.4.4 sin modificar comentarios históricos -->

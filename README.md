@@ -315,7 +315,7 @@ MIT.
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||0.3.0: secciones nuevas de la hoja de progreso y de la caja de busqueda (ingles y espanol) con sus dos capturas, tablas [ProgressGrid] y [CardFilter], [ArtifactsPaging] RetryFrames 5->10 y Balance anadido, pies de captura a 19 clanes, relacion con Custom-Clan-Helper reescrita -->
 <!-- 2026-09-23-0058||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||relacion con Custom-Clan-Helper (ingles y espanol): fuera la advertencia de "no probado juntos"; probado el 23-sep con CCH activo, hoja de progreso incluida -->
 
-## Soul Savior: combinaciones de clanes (0.4.2)
+## Soul Savior: combinaciones de clanes (0.4.4)
 
 Si existe el guardado de ExpandedWinTracker, el logbook añade una octava pestaña superior para Soul Savior, con cinco clanes por página y contador independiente. El registro normal agrupa también los clanes del DLC para aprovechar la última hoja. Conserva los retratos y banderas de aliados, muestra la máxima dificultad ganada como S0, S1, etc., y ofrece detalle por campeón en el tooltip de cada bandera. Un guion indica que no hay victoria registrada. El contador de la derecha indica aliados con alguna victoria / aliados disponibles.
 
@@ -333,10 +333,12 @@ Validación local: compilación contra las DLL instaladas del juego y pruebas de
 <!-- 2026-09-30-1935||codex-customclanuifixes-review||README.md||Documentar vista Soul Savior, lectura del tracker y limites de esta integracion -->
 <!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar pestaña independiente, cinco filas y agrupación DLC -->
 
-### Estado de la revisión 0.4.2 — 2026-09-30
+### Estado de la revisión 0.4.4 — 2026-09-30
 
-Instalada localmente y verificada mediante SHA256. La compilación contra las DLL instaladas terminó sin errores ni avisos; pasan las pruebas de geometría, reparto de aliados, lectura de registros y límites/contador de paginación. David confirmó visualmente la 0.4.1; la pestaña independiente y las cinco filas de la 0.4.2 todavía requieren comprobación en el juego, incluida la animación tras una victoria DLC.
+Instalada localmente y verificada mediante SHA256. La compilación contra las DLL instaladas terminó sin errores ni avisos. Pasan las pruebas de geometría, reparto de aliados, lectura de registros, paginación y del componente de pestañas con gráficos desplazados y layout tardío. David confirmó visualmente la 0.4.1; las capturas posteriores mostraron el solapamiento del octavo icono en la 0.4.2 y la 0.4.3. La 0.4.4 corrige la medición de cero detectada en el registro, pero la comprobación visual del encabezado sigue pendiente, al igual que la animación tras una victoria DLC.
 
-El detalle por versión se mantiene en [CHANGELOG.md](CHANGELOG.md). Este commit sube el código y la documentación a GitHub; el paquete 0.4.2 sigue sin publicarse en Thunderstore.
+El detalle por versión se mantiene en [CHANGELOG.md](CHANGELOG.md). Este commit sube el código y la documentación a GitHub; el paquete 0.4.4 sigue sin publicarse en Thunderstore.
 
 <!-- 2026-09-30-2128||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar entrega 0.4.2, validaciones y pendientes; distinguir push de código de publicación Thunderstore -->
+
+<!-- 2026-09-30-2223||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Actualizar README del paquete a 0.4.4 con pruebas realizadas y comprobación visual pendiente -->

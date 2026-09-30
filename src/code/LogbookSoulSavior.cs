@@ -417,58 +417,109 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             placement.Added = tab;
             Plugin.Logger.LogInfo("[SoulSavior] Pestaña independiente registrada.");
         }
-        internal static IEnumerator ArrangeTabs(List<CompendiumTab> originals, CompendiumTab added)
-        {
-            // Esperar a que Unity mida la fila; repartir ocho rombos en el mismo espacio.
-            for (int frame = 0; frame < 5; frame++) yield return null;
-            if (added == null || originals.Count < 2) yield break;
-            var first = (RectTransform)originals[0].transform;
-            var last = (RectTransform)originals[originals.Count - 1].transform;
-            var parent = first.parent;
-            var gridLayout = parent.GetComponent<GridLayoutGroup>();
-            if (gridLayout != null)
-            {
-                int n = originals.Count;
-                float used = gridLayout.cellSize.x * n + gridLayout.spacing.x * (n - 1);
-                gridLayout.constraint = GridLayoutGroup.Constraint.FixedRowCount;
-                gridLayout.constraintCount = 1;
-                gridLayout.spacing = new Vector2(Mathf.Max(0f,
-                    (used - gridLayout.cellSize.x * (n + 1)) / n), gridLayout.spacing.y);
-                LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)parent);
-                yield break;
-            }
-            var horizontal = parent.GetComponent<HorizontalLayoutGroup>();
-            if (horizontal != null)
-            {
-                float used = originals.Sum(t => ((RectTransform)t.transform).rect.width)
-                    + horizontal.spacing * (originals.Count - 1);
-                float widths = used - horizontal.spacing * (originals.Count - 1) + first.rect.width;
-                horizontal.spacing = Mathf.Max(0f, (used - widths) / originals.Count);
-                LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)parent);
-            }
-            else
-            {
-                float left = first.anchoredPosition.x, right = last.anchoredPosition.x;
-                originals.Add(added);
-                for (int i = 0; i < originals.Count; i++)
-                {
-                    var rt = (RectTransform)originals[i].transform;
-                    rt.anchorMin = first.anchorMin;
-                    rt.anchorMax = first.anchorMax;
-                    rt.anchoredPosition = new Vector2(Mathf.Lerp(left, right,
-                        (float)i / (originals.Count - 1)), first.anchoredPosition.y);
-                }
-            }
-        }
     }
+
     public sealed class SoulSaviorTabPlacement : MonoBehaviour
     {
         internal List<CompendiumTab> Originals = new();
         internal CompendiumTab? Added;
-        IEnumerator Start()
+        readonly List<RectTransform> tabs = new();
+        readonly List<RectTransform> graphics = new();
+        RectTransform? parent;
+        float left, right, baseline, measuredWidth;
+        bool ready, warned;
+
+        void OnEnable() { Canvas.willRenderCanvases += Apply; }
+        void OnDisable() { Canvas.willRenderCanvases -= Apply; }
+
+        static RectTransform VisibleAnchor(CompendiumTab tab)
         {
-            if (Added != null)
-                yield return SoulSaviorTabRegistration.ArrangeTabs(Originals, Added);
+            // El controlador CompendiumTab puede tener centro cero aunque el rombo
+            // esté desplazado dentro de un hijo. Medir el gráfico del botón.
+            var target = tab.Button.targetGraphic;
+            var image = tab.Button.GetComponentsInChildren<Image>(true)
+                .Where(i => i.sprite != null && i.enabled && i.gameObject.activeInHierarchy
+                    && i.rectTransform.rect.width > 1f && i.rectTransform.rect.height > 1f
+                    && i.rectTransform.rect.width < 300f && i.rectTransform.rect.height < 300f)
+                .OrderByDescending(i => i.rectTransform.rect.width * i.rectTransform.rect.height)
+                .FirstOrDefault();
+            return image != null ? image.rectTransform
+                : target != null ? target.rectTransform : (RectTransform)tab.Button.transform;
+        }
+
+        static Vector3 Center(RectTransform graphic)
+            => graphic.TransformPoint(graphic.rect.center);
+
+        internal static bool ValidSpan(float start, float end, int count)
+            => count > 1 && end - start > (count - 1) * 1f;
+
+        bool Capture()
+        {
+            if (Added == null || Originals.Count < 2 || !Added.gameObject.activeInHierarchy) return false;
+            parent = Added.transform.parent as RectTransform;
+            if (parent == null || parent.rect.width <= 1f) return false;
+            var ordered = Originals.Where(t => t != null)
+                .Select(t => new { Tab = t, Graphic = VisibleAnchor(t) })
+                .OrderBy(t => parent.InverseTransformPoint(Center(t.Graphic)).x).ToList();
+            if (ordered.Count < 2) return false;
+            var first = parent.InverseTransformPoint(Center(ordered[0].Graphic));
+            var last = parent.InverseTransformPoint(Center(ordered[ordered.Count - 1].Graphic));
+            if (!ValidSpan(first.x, last.x, ordered.Count))
+            {
+                if (!warned)
+                {
+                    warned = true;
+                    Plugin.Logger.LogWarning("[SoulSavior] Esperando geometría válida del encabezado: "
+                        + string.Join("; ", ordered.Select(t => t.Tab.name + " / " + t.Graphic.name
+                            + " x=" + parent.InverseTransformPoint(Center(t.Graphic)).x
+                            + " ancho=" + t.Graphic.rect.width)));
+                }
+                return false; // Nunca aceptar extremos 0/0; reintentar al mostrarse la pantalla.
+            }
+            left = first.x;
+            right = last.x;
+            baseline = first.y;
+            measuredWidth = parent.rect.width;
+            var fitter = parent.GetComponent<ContentSizeFitter>();
+            if (fitter != null) fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            foreach (var item in ordered)
+            {
+                tabs.Add((RectTransform)item.Tab.transform);
+                graphics.Add(item.Graphic);
+            }
+            tabs.Add((RectTransform)Added.transform);
+            graphics.Add(VisibleAnchor(Added));
+            foreach (var tab in tabs)
+            {
+                var element = tab.GetComponent<LayoutElement>()
+                    ?? tab.gameObject.AddComponent<LayoutElement>();
+                element.ignoreLayout = true;
+            }
+            ready = true;
+            Plugin.Logger.LogInfo("[SoulSavior] Ocho gráficos visibles entre " + left + " y " + right
+                + "; separación " + (right - left) / (tabs.Count - 1));
+            return true;
+        }
+
+        internal static float CenterX(float start, float end, int index, int count)
+            => start + (end - start) * index / Mathf.Max(1, count - 1);
+
+        void LateUpdate() { Apply(); }
+
+        void Apply()
+        {
+            if (!ready && !Capture()) return;
+            if (parent == null || Added == null || parent.rect.width <= 1f) return;
+            float scale = measuredWidth > 1f ? parent.rect.width / measuredWidth : 1f;
+            for (int i = 0; i < tabs.Count; i++)
+            {
+                var tab = tabs[i];
+                var graphic = graphics[i];
+                if (tab == null || graphic == null) continue;
+                var target = parent.TransformPoint(new Vector3(
+                    CenterX(left, right, i, tabs.Count) * scale, baseline, 0f));
+                tab.position += target - Center(graphic);
+            }
         }
     }
 }
@@ -485,3 +536,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2122||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Evitar resolución de extensión Concat del juego y su referencia incidental a Steamworks
 
 // 2026-09-30-2123||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Comprobar disponibilidad de pestaña plantilla antes de crear la sección
+
+// 2026-09-30-2131||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||0.4.3: medir centros en espacio común, repartir ocho pestañas y mantener posición tras animaciones/layout
+
+// 2026-09-30-2133||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Evitar que ContentSizeFitter colapse el encabezado al excluir botones del layout
+
+// 2026-09-30-2206||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||0.4.4: medir gráfico targetGraphic del botón; rechazar extremos 0/0 y reintentar antes del render hasta layout válido
+
+// 2026-09-30-2206||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Preferir imagen visible del rombo frente al controlador de tamaño cero; corregir traza de diagnóstico
