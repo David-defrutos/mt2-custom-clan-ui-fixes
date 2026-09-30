@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.2 (local, sin publicar en Thunderstore)
+
+- Octava pestaña superior de Soul Savior, con acceso directo y paginación independiente del registro normal.
+- Cinco clanes por página Soul Savior; se elimina la cabecera que restaba altura a la quinta fila.
+- Clanes normales y DLC comparten paginación: con 23 clanes quedan cinco hojas; Yokai, Railforged y Wurmkin aparecen juntos en la última.
+- Se conservan los objetos y páginas de datos nativos del DLC para aplicar cambios y animaciones de victoria.
+- Navegación con mando selecciona el primer clan visible. Los ocho iconos se distribuyen dentro del espacio de los siete anteriores.
+- Compilación sin errores ni avisos; pruebas de geometría, lectura y paginación correctas. Validación visual de esta versión pendiente.
+## 0.4.1 (local, sin publicar en Thunderstore)
+
+- Banderas normales repartidas también al inicializar páginas ocultas: 22 aliados quedan en 11+11.
+- Posición de banderas medida desde el retrato, en modo normal y Soul Savior; el antiguo offset negativo ya no tapa la imagen.
+- Punta de la cinta con 20 px de separación real respecto al medidor.
+- Título de Soul Savior sin el localizador heredado del nombre del clan.
+- Con 22 aliados por modo se mantienen las páginas separadas: dos grupos a tamaño original necesitan 1176 px más separación; el espacio disponible después del retrato y antes del medidor es menor de 1000 px.
+## 0.4.0 (local, sin publicar en Thunderstore)
+
+- Páginas Soul Savior en el registro de progreso: combinaciones principal/aliado, máxima dificultad y detalle por campeón, con lectura de ExpandedWinTracker.
+- Contador de aliados con victoria y paginación nativa; opción SoulSavior.Enabled.
+- Corregido el estiramiento de cintas con placas flexibles y la restauración de banderas entre clanes.
+- Sin cambios en los guardados del juego ni del tracker.
+- Primera integración: las victorias por alma todavía no tienen página.
+
 ## v0.3.0
 
 - **Logbook, Progress Record page**: one clan per row, paginated with the game's own arrows
@@ -49,3 +72,11 @@
 - Everything is configurable in `BepInEx\config\mt2_custom_clan_ui_fixes.Plugin.cfg`, and
   `Enabled = false` leaves the screen exactly as the game draws it.
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/CHANGELOG.md||entrada v0.3.0: hoja de progreso, caja de busqueda del filtro, secciones [ProgressGrid] y [CardFilter], traza apagada por defecto -->
+
+<!-- 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Integracion Soul Savior 0.4.0 completada; consultas validadas y presentacion separada de victorias normales -->
+
+<!-- 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio -->
+
+<!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir cambios y validaciones de 0.4.2 -->
+
+<!-- 2026-09-30-2128||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar entrega 0.4.2, validaciones y pendientes; distinguir push de código de publicación Thunderstore -->

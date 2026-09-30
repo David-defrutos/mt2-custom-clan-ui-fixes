@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>mt2_custom_clan_ui_fixes.Plugin</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>0.3.0</Version>
+    <Version>0.4.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,8 +19,8 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <!-- Las clases del juego (CompendiumSectionChampUpgrades y compania) -->
     <PackageReference Include="MonsterTrain2.Api" Version="4.5.21908879" />
-    <!-- Transform, RectTransform, Vector2. UnityEngine.UI NO hace falta: los
-         componentes de layout se tocan por reflexion. -->
+    <!-- Transform, RectTransform, Vector2. La API tambien aporta UnityEngine.UI y TextMeshPro; los
+         parches originales usan reflexion y Soul Savior crea su propia vista nativa. -->
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" />
   </ItemGroup>
 
@@ -28,3 +28,7 @@
        basta con BepInEx, la API del juego y los tipos de Unity. -->
 </Project>
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/mt2_custom_clan_ui_fixes.Plugin.csproj||<Version> 0.2.1 -> 0.3.0 (PLUGIN_VERSION del DLL) -->
+
+<!-- 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Integracion Soul Savior 0.4.1 completada; consultas validadas y presentacion separada de victorias normales -->
+
+<!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Versión local de fuente 0.4.1 a 0.4.2 -->

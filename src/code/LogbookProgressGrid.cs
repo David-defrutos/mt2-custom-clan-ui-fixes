@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using HarmonyLib;
+using ShinyShoe;
 using UnityEngine;
 
 namespace mt2_custom_clan_ui_fixes.Plugin
@@ -70,7 +71,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public static bool BalanceFlagRows = true;   // repartir las banderas 9 y 9
         public static bool FlagAlignLeft = true;     // pegarlas a la izquierda de la cinta
         public static float RibbonExtra = 0f;        // px de mas para la cinta de color
-        public static float FlagOffsetX = -280f;        // px que se mueven las banderas (- = izquierda)
+        public static float FlagOffsetX = 0f;        // margen adicional a la derecha del retrato
         public static bool FixMasteryMeter = true;   // que el medidor crezca en columnas
         public static int MeterColumns = 12;         // columnas fijas del medidor
         public static int MeterRows = 5;             // filas que caben de alto
@@ -110,6 +111,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static readonly List<Component> seccionesRail = new();
         static int porHoja = 10, subpagina, subpaginas = 1;
         static bool trazado;
+        static bool dlcIntegrado;
         static bool pintandoRotulo;   // solo mientras el juego escribe el "Page N of M"
         static int indiceReal;
         static Vector2 celdaOriginal;
@@ -122,6 +124,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static void TrasInicializarHoja(StandardChecklistPage __instance)
         {
             hoja = __instance;
+            dlcIntegrado = false;
             secciones.Clear();
             subpagina = 0;
             if (FSecciones?.GetValue(__instance) is IEnumerable lista)
@@ -156,6 +159,59 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
 
+        [HarmonyPatch(typeof(CompendiumSectionChecklist), "InitializeImpl")]
+        [HarmonyPostfix, HarmonyPriority(Priority.Last)]
+        static void IntegrarDlc(CompendiumSectionChecklist __instance)
+        {
+            if (!Enabled || hoja == null || hojaRail == null || seccionesRail.Count == 0) return;
+            if (!__instance.ChecklistPages.Contains(hoja) || !__instance.ChecklistPages.Contains(hojaRail)) return;
+            var layout = FLayoutTodos?.GetValue(hoja) as Component;
+            if (layout == null || !layout.gameObject.activeSelf)
+                layout = FLayoutIniciales?.GetValue(hoja) as Component;
+            if (layout == null) return;
+            foreach (var row in seccionesRail)
+            {
+                row.transform.SetParent(layout.transform, false);
+                if (!secciones.Contains(row)) secciones.Add(row);
+            }
+            // Conservar ambas páginas nativas para ApplyChanges y sus animaciones.
+            dlcIntegrado = true;
+            Ajustar();
+            RefrescarRotulo(__instance);
+            __instance.PageCountChangedSignal.Dispatch();
+            if (ReferenceEquals(FPaginaActual?.GetValue(__instance), hojaRail))
+                AccessTools.Method(typeof(CompendiumSectionChecklist), "SetPage")
+                    .Invoke(__instance, new object[] { hojaRail });
+            Log("DLC integrado: " + secciones.Count + " clanes en " + subpaginas + " páginas.");
+        }
+
+        [HarmonyPatch(typeof(CompendiumSectionChecklist), "SetPage")]
+        [HarmonyPrefix]
+        static void RedirigirDlc(ref ChecklistPage setPage)
+        {
+            if (!Enabled || !dlcIntegrado || setPage != hojaRail || hoja == null) return;
+            int index = secciones.FindIndex(c => seccionesRail.Contains(c));
+            subpagina = Mathf.Max(0, index / porHoja);
+            setPage = hoja;
+        }
+        [HarmonyPatch(typeof(CompendiumSectionChecklist), "Close")]
+        [HarmonyPrefix]
+        static void ReiniciarNormal() { subpagina = 0; }
+
+        [HarmonyPatch(typeof(StandardChecklistPage), "GetDefaultGameUISelectable")]
+        [HarmonyPrefix]
+        static bool SeleccionarVisible(StandardChecklistPage __instance, ref IGameUIComponent? __result)
+        {
+            if (!Enabled || __instance != hoja) return true;
+            foreach (var component in secciones)
+                if (component != null && component.gameObject.activeInHierarchy
+                    && component is ClanChecklistSection row)
+                {
+                    __result = row.GetDefaultGameUISelectable();
+                    return false;
+                }
+            return true;
+        }
         static IEnumerator AjustarRailUnosFrames(RailforgedChecklistPage pagina)
         {
             for (int i = 1; i <= 40; i++)
@@ -247,7 +303,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// </summary>
         static void AjustarRail()
         {
-            if (!Enabled || hojaRail == null || seccionesRail.Count == 0) return;
+            if (!Enabled || dlcIntegrado || hojaRail == null || seccionesRail.Count == 0) return;
             try
             {
                 if (FLayoutRail?.GetValue(hojaRail) is not Component layout) return;
@@ -411,7 +467,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
             foreach (var s in lista)
             {
-                if (s == null || s.transform is not RectTransform seccion) continue;
+                if (s == null || s.transform is not RectTransform seccion
+                    || !s.gameObject.activeInHierarchy) continue;
+
+                // CCH puede preparar las filas con la pagina apagada o reconstruirlas
+                // despues del reparto inicial. Confirmarlo al mostrar cada seccion.
+                if (s is ClanChecklistSection clan) TrasRepartirAliados(clan);
+
+                // Guardar la geometria antes de que las anclas cambien al ensanchar padres.
+                foreach (Transform parte in seccion)
+                    if (parte.name.Contains("Main class section"))
+                        foreach (Transform pieza in parte)
+                            if (pieza.name.Contains("Ribbon container"))
+                                GuardarFranja(pieza);
 
                 if (WidenSections)
                 {
@@ -437,7 +505,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     // el contenedor esta en la fila de la seccion, asi que cualquier cambio
                     // de posicion se lo comeria el layout en la siguiente pasada. El relleno
                     // si lo respeta, porque forma parte del calculo.
-                    if (Mathf.Abs(FlagOffsetX) > 0.5f) PonerRelleno(vg, Mathf.RoundToInt(FlagOffsetX));
+                    PonerRelleno(vg, 8);
                 }
 
                 float pideFila = 0f;
@@ -474,7 +542,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     // --- Modo "inflow": el contenedor de aliados entra en la fila, pega las
                     // banderas a su sitio sin holgura, y **la placa se queda todo lo que
                     // sobra**, asi que su franja de color llega hasta las banderas.
+                    // La cinta crece debajo de las banderas; su caja no necesita reservar
+                    // un hueco en el layout horizontal ni arrastrar el viejo offset -280.
                     EnFila(contenedor, pideContenedor);
+                    PonerIgnoreLayout(contenedor, true);
+                    FijarAncho(contenedor, pideContenedor);
 
                     if (placa != null)
                     {
@@ -495,6 +567,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                             // Antes de medir, que el layout termine: si no, el medidor de
                             // cartas todavia no esta en su sitio y la distancia sale corta.
                             ReconstruirLayout(seccion);
+                            ColocarBanderas(seccion, placa, contenedor);
                             EstirarFranja(seccion, placa, medidor, anchoPlaca,
                                           pideContenedor + hueco * 2f);
                         }
@@ -528,7 +601,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 foreach (Transform h in s.transform)
                 {
                     if (!h.name.Contains("victory container")) continue;
-                    foreach (Transform f in h) mayor = Mathf.Max(mayor, Fila(f));
+                    if (BalanceFlagRows)
+                    {
+                        int total = 0; float lado = 48f;
+                        foreach (Transform fila in h)
+                            foreach (Transform flag in fila)
+                            {
+                                if (!flag.gameObject.activeSelf) continue;
+                                total++;
+                                if (flag is RectTransform r) lado = Mathf.Max(lado, r.rect.width);
+                            }
+                        int porFila = (total + 1) / 2;
+                        if (porFila > 0)
+                            mayor = Mathf.Max(mayor, porFila * lado + (porFila - 1) * FlagSpacing);
+                    }
+                    else foreach (Transform f in h) mayor = Mathf.Max(mayor, Fila(f));
                     break;
                 }
             }
@@ -675,9 +762,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static void EstirarFranja(RectTransform seccion, Transform placa, Transform? medidor,
                                   float anchoPlaca, float sobresale)
         {
-            // Solo cuando la placa ya tiene su ancho definitivo: antes de eso el layout aun
-            // no ha colocado la franja y se congelaria en un sitio que no es.
-            if (placa is not RectTransform rp || Mathf.Abs(rp.rect.width - anchoPlaca) > 1f) return;
+            // El layout ya se ha reconstruido. La placa tiene ancho flexible:
+            // su rect final puede ser mayor que el preferredWidth configurado.
+            if (placa is not RectTransform rp || rp.rect.width <= 1f) return;
 
             float huecoPlaca = LeerFloat(Componente(placa, "HorizontalLayoutGroup"), "spacing", 0f);
 
@@ -704,13 +791,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             // `ignoreLayout`-, asi que sumar anchos no vale. Midiendo la distancia real entre
             // el borde izquierdo de la cinta y el del medidor se acierta pase lo que pase con
             // el layout, y ademas se corrige solo en cada pasada.
-            // Se calcula por las dos vias y se coge la mayor. La medida es la buena cuando
-            // el layout ya ha colocado el medidor; cuando no, sale corta -288 px en vez de
-            // ~1250- y encogeria la cinta por debajo de lo que ya funcionaba. Quedandose con
-            // la mayor, el peor caso es el resultado de la version anterior, nunca peor.
+            // Con la seccion activa y reconstruida manda la medida. La cuenta solo
+            // es respaldo si falta el medidor, no un minimo que pueda invadirlo.
+            ColocarDesdeIzquierda(rc, rc.rect.width, xOriginal[rc]);
             float calculado = Mathf.Max(0f, anchoPlaca - antes) + Mathf.Max(0f, sobresale);
             float medido = DistanciaHasta(seccion, rc, medidor);
-            float objetivo = Mathf.Max(calculado, medido) + RibbonExtra;
+            // El extremo decorativo sobresale del rect de la cinta. Reservar ese vuelo
+            // y 20 px de aire antes del medidor, no solo medir hasta el fondo de color.
+            float vuelo = 0f;
+            foreach (Transform pieza in cinta)
+                if (pieza.name.Contains("Edge") && pieza is RectTransform borde)
+                    vuelo = Mathf.Max(vuelo, xOriginal[pieza]
+                        + Original(pieza, borde.rect.width) - anchoViejo);
+            float objetivo = (medido > 1f ? medido : calculado) - vuelo - 20f + RibbonExtra;
             if (anchoViejo <= 1f || objetivo <= 1f) return;
             float crece = objetivo - anchoViejo;
 
@@ -724,6 +817,23 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 $"antes {antes:0}, extra {RibbonExtra:0}, {tocados} pieza(s) dentro)");
         }
 
+        static void ColocarBanderas(RectTransform seccion, Transform placa, Transform contenedor)
+        {
+            if (contenedor is not RectTransform rc) return;
+            Transform? retrato = null;
+            foreach (Transform h in placa)
+                if (h.name.Contains("Image background")) { retrato = h; break; }
+            if (retrato is not RectTransform foto) return;
+            var esquinas = new Vector3[4];
+            foto.GetWorldCorners(esquinas);
+            float derechaRetrato = seccion.InverseTransformPoint(esquinas[3]).x;
+            var pos = rc.localPosition;
+            // 24 px protegen tambien el marco. Nunca admitir un offset negativo
+            // que permita volver a cubrir la imagen.
+            pos.x = derechaRetrato + 24f + Mathf.Max(0f, FlagOffsetX)
+                + rc.rect.width * rc.pivot.x;
+            rc.localPosition = pos;
+        }
         static readonly MethodInfo? MReconstruir = AccessTools.Method(
             AccessTools.TypeByName("UnityEngine.UI.LayoutRebuilder"), "ForceRebuildLayoutImmediate");
 
@@ -779,10 +889,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 {
                     // La punta no se estira: se lleva al extremo. Y se mueve desde su sitio
                     // original, no desde donde este ahora, para no ir empujandola cada pasada.
-                    if (!xOriginal.TryGetValue(h, out float x0)) { x0 = rt.localPosition.x; xOriginal[h] = x0; }
-                    var q = rt.localPosition;
-                    q.x = x0 + crece;
-                    rt.localPosition = q;
+                    ColocarDesdeIzquierda(rt, Original(h, rt.rect.width),
+                                          xOriginal[h] + crece);
                     n++;
                     continue;
                 }
@@ -808,13 +916,30 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// </summary>
         static void EstirarManteniendoIzquierda(RectTransform rt, float ancho)
         {
-            float izquierda = rt.localPosition.x - rt.rect.width * rt.pivot.x;
-            FijarAncho(rt, ancho);
-            float ahora = rt.localPosition.x - rt.rect.width * rt.pivot.x;
+            ColocarDesdeIzquierda(rt, ancho, xOriginal[rt]);
+        }
 
+        static void ColocarDesdeIzquierda(RectTransform rt, float ancho, float izquierda)
+        {
+            FijarAncho(rt, ancho);
+            float bordePadre = rt.parent is RectTransform padre ? padre.rect.xMin : 0f;
             var p = rt.localPosition;
-            p.x += izquierda - ahora;
+            p.x = bordePadre + izquierda + rt.rect.width * rt.pivot.x;
             rt.localPosition = p;
+        }
+
+        static void GuardarFranja(Transform t)
+        {
+            if (t is RectTransform rt)
+            {
+                Original(t, rt.rect.width);
+                if (!xOriginal.ContainsKey(t))
+                {
+                    float bordePadre = rt.parent is RectTransform padre ? padre.rect.xMin : 0f;
+                    xOriginal[t] = rt.localPosition.x - rt.rect.width * rt.pivot.x - bordePadre;
+                }
+            }
+            foreach (Transform h in t) GuardarFranja(h);
         }
 
         static void PonerIgnoreLayout(Transform t, bool valor)
@@ -876,6 +1001,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
                 // Lo que hemos movido nosotros, para poder devolverlo antes de que el juego toque.
         static readonly Dictionary<Transform, Transform> devolverA = new();
+        static readonly Dictionary<Transform, int> ordenOriginal = new();
 
         /// <summary>
         /// Reparte las banderas entre las dos filas a mitades: con 18 aliados, **9 y 9** en
@@ -905,7 +1031,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (FFila?.GetValue(__instance) is not Component c1) return;
                 if (FFilaCrew?.GetValue(__instance) is not Component c2) return;
                 Transform f1 = c1.transform, f2 = c2.transform;
-                if (!f1.gameObject.activeInHierarchy && !f2.gameObject.activeInHierarchy) return;
+                // El reparto no depende de medidas: tambien es valido con la pagina apagada.
 
                 var arriba = Activos(f1);
                 var abajo = Activos(f2);
@@ -921,7 +1047,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 for (int i = 0; i < mover; i++)
                 {
                     var t = arriba[arriba.Count - 1 - i];
-                    if (!devolverA.ContainsKey(t)) devolverA[t] = f1;
+                    if (!devolverA.ContainsKey(t))
+                    {
+                        devolverA[t] = f1;
+                        ordenOriginal[t] = t.GetSiblingIndex();
+                    }
                     t.SetParent(f2, false);
                     t.SetSiblingIndex(0);
                 }
@@ -933,22 +1063,33 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         /// <summary>Antes de que el juego toque sus filas, se le devuelve lo que movimos.</summary>
         [HarmonyPatch(typeof(ClanChecklistSection), "ReparentCrewVictoryItems")]
         [HarmonyPrefix]
-        static void AntesDeRepartir() => Devolver();
+        static void AntesDeRepartir(ClanChecklistSection __instance) => Devolver(__instance);
 
         [HarmonyPatch(typeof(ClanChecklistSection), "ResetParentOfCrewVictoryItems")]
         [HarmonyPrefix]
-        static void AntesDeDeshacer() => Devolver();
+        static void AntesDeDeshacer(ClanChecklistSection __instance) => Devolver(__instance);
 
-        static void Devolver()
+        static void Devolver(ClanChecklistSection seccion)
         {
             if (devolverA.Count == 0) return;
+            var restaurar = new List<Transform>();
             foreach (var par in devolverA)
+                if (par.Key == null || par.Value == null
+                    || par.Value.IsChildOf(seccion.transform)) restaurar.Add(par.Key!);
+
+            // Restaurar tambien el orden: SetParent por si solo coloca el hijo al final.
+            restaurar.Sort((a, b) => ordenOriginal[a].CompareTo(ordenOriginal[b]));
+            foreach (var t in restaurar)
             {
-                var t = par.Key;
-                if (t == null || par.Value == null) continue;
-                try { t.SetParent(par.Value, false); } catch { }
+                var padre = devolverA[t];
+                if (t != null && padre != null)
+                {
+                    t.SetParent(padre, false);
+                    t.SetSiblingIndex(ordenOriginal[t]);
+                }
+                devolverA.Remove(t!);
+                ordenOriginal.Remove(t!);
             }
-            devolverA.Clear();
         }
 
         static List<Transform> Activos(Transform padre)
@@ -968,7 +1109,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPrefix]
         static bool AntesDePasar(CompendiumSectionChecklist __instance, int dir)
         {
-            if (!Enabled || subpaginas <= 1 || hoja == null) return true;
+            if (!Enabled || (subpaginas <= 1 && !dlcIntegrado) || hoja == null) return true;
             if (!EstamosEnLaEstandar(__instance))
             {
                 // Se viene de otra hoja: al entrar, por el lado que corresponda.
@@ -977,7 +1118,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
 
             int destino = subpagina + dir;
-            if (destino < 0 || destino >= subpaginas) return true;   // se sale: cambia de hoja
+            if (destino < 0 || destino >= subpaginas) return !dlcIntegrado;   // se sale: cambia de hoja
 
             subpagina = destino;
             PintarYMedir();
@@ -995,11 +1136,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         static bool AntesDePoderPasar(PaginatedCompendiumSection __instance,
                                       PageTurnZone.TurnDir dir, ref bool __result)
         {
-            if (!Enabled || subpaginas <= 1) return true;
+            if (!Enabled || (subpaginas <= 1 && !dlcIntegrado)) return true;
             if (__instance is not CompendiumSectionChecklist checklist) return true;
             if (!EstamosEnLaEstandar(checklist)) return true;
 
             int destino = subpagina + (int)dir;
+            if (dlcIntegrado) { __result = destino >= 0 && destino < subpaginas; return false; }
             if (destino >= 0 && destino < subpaginas) { __result = true; return false; }
             return true;   // fuera de las sub-paginas manda el original
         }
@@ -1027,21 +1169,21 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPostfix]
         static void TrasContarPaginas(ref int __result)
         {
-            if (Enabled && subpaginas > 1 && pintandoRotulo) __result += subpaginas - 1;
+            if (Enabled && pintandoRotulo) __result += subpaginas - 1 - (dlcIntegrado ? 1 : 0);
         }
 
         [HarmonyPatch(typeof(PaginatedCompendiumSection), "RefreshPagination")]
         [HarmonyPrefix]
         static void AntesDelRotulo(PaginatedCompendiumSection __instance)
         {
-            if (!Enabled || subpaginas <= 1 || FIndicePagina == null) return;
+            if (!Enabled || (subpaginas <= 1 && !dlcIntegrado) || FIndicePagina == null) return;
             if (__instance is not CompendiumSectionChecklist checklist) return;
 
             try
             {
                 indiceReal = Convert.ToInt32(FIndicePagina.GetValue(__instance));
                 int virtual_ = EstamosEnLaEstandar(checklist)
-                    ? indiceReal + subpagina                    // dentro de la hoja estandar
+                    ? (dlcIntegrado ? 0 : indiceReal) + subpagina                    // dentro de la hoja estandar
                     : indiceReal + subpaginas - 1;              // hojas posteriores
                 FIndicePagina.SetValue(__instance, virtual_);
                 pintandoRotulo = true;
@@ -1064,7 +1206,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPostfix]
         static void TrasRefrescar(CompendiumSectionChecklist __instance)
         {
-            if (Enabled && subpaginas > 1 && EstamosEnLaEstandar(__instance)) PintarYMedir();
+            if (!Enabled) return;
+            if (EstamosEnLaEstandar(__instance)) PintarYMedir();
+            else if (hojaRail != null && hojaRail.isActiveAndEnabled)
+            {
+                AjustarRail();
+                hojaRail.StartCoroutine(AjustarRailUnosFrames(hojaRail));
+            }
         }
 
         /// <summary>Cambiar de sub-pagina no pasa por el juego, asi que el rotulo hay que
@@ -1324,3 +1472,19 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 }
 
 // 2026-09-22-2233||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/code/LogbookProgressGrid.cs||MeterColumns 9->12 y MeterRows 6->5: el medidor de cartas pasa de 54 huecos (9x6) a 60 (12x5)
+// 2026-09-30-1907||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Medir solo secciones activas; quitar guardia de placa fija; guardar geometria antes de estirar; restaurar banderas por clan y orden; reajustar DLC al activar
+// 2026-09-30-1908||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Restaurar borde izquierdo antes de medir y aclarar ancho flexible; corregir avisos de nulabilidad
+
+// 2026-09-30-2021||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Reparto incluso en paginas apagadas; banderas despues del retrato; margen real de punta; etiquetas sin localizador heredado
+
+// 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio
+
+// 2026-09-30-2116||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||0.4.2: DLC y clanes normales en una lista compacta; preservar páginas de datos y redirigir su navegación
+
+// 2026-09-30-2117||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||0.4.2: referencia Steamworks local, navegación de lista compacta y versión de compilación
+
+// 2026-09-30-2117||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Importar ShinyShoe para seleccionar el primer clan visible con mando
+
+// 2026-09-30-2120||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Redirigir también una página DLC que ya fue seleccionada durante ApplyChanges antes del montaje compacto
+
+// 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Comparar identidad de página DLC explícitamente para eliminar aviso de compilación

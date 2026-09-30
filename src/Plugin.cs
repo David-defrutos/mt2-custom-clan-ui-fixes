@@ -135,8 +135,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "ProgressGrid", "MeterRows", 5,
                 "Filas que caben de alto en la seccion. Solo se usa como tope: si algun clan no cabe en MeterColumns x MeterRows, se anaden columnas para todos antes que dejar que se salga.");
             var cfgProgCorrer = Config.Bind(
-                "ProgressGrid", "FlagOffsetX", -280f,
-                "Pixeles que se mueven las banderas de aliados dentro de la seccion. Negativo = hacia la izquierda. Se aplica como relleno del layout, que es lo unico que el propio layout no deshace.");
+                "ProgressGrid", "FlagOffsetX", 0f,
+                "Desplazamiento adicional de las banderas hacia la derecha, despues del retrato y su margen. Los valores negativos antiguos se ignoran para evitar tapar la imagen.");
             var cfgProgVolcado = Config.Bind(
                 "ProgressGrid", "DumpTree", false,
                 "Vuelca una vez en LogOutput.log el arbol entero de la primera seccion de clan, con anchos y con que componente pinta cada objeto. Para saber a que hay que apuntar sin adivinar nombres.");
@@ -193,6 +193,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             CardFilterSearch.MinOverlap = cfgFiltroSolape.Value;
             CardFilterSearch.Levels = cfgFiltroNiveles.Value;
 
+            LogbookSoulSavior.Enabled = Config.Bind(
+                "SoulSavior", "Enabled", true,
+                "Muestra paginas de combinaciones Soul Savior en el registro de progreso, leyendo ExpandedWinTracker. No modifica sus registros.").Value;
+
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
@@ -203,3 +207,6 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-22-2233||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||MeterColumns 9->12 y MeterRows 6->5 en Config.Bind, y su descripcion (54 -> 60 cartas)
 // 2026-09-22-2245||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||seccion [CardFilter] nueva en el config (Enabled, Verbose, DumpTree, AlsoInside, MinOverlap, Levels) y volcado a CardFilterSearch
 // 2026-09-22-2327||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/src/Plugin.cs||Verbose true->false en las cuatro secciones (LogbookFit, ArtifactsPaging, ProgressGrid, CardFilter) y CardFilter.DumpTree true->false: valores por defecto de la version publicada
+// 2026-09-30-1931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||Añadir ajuste SoulSavior.Enabled
+
+// 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio
