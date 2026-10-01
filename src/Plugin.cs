@@ -197,6 +197,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 "SoulSavior", "Enabled", true,
                 "Muestra paginas de combinaciones Soul Savior en el registro de progreso, leyendo ExpandedWinTracker. No modifica sus registros.").Value;
 
+            CardUsageTracker.Enabled = Config.Bind("CardUsage", "Enabled", true,
+                "Track actual card plays from installation onwards. Replays and abilities are excluded; direct and automatic plays are counted separately.").Value;
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
 
             Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
@@ -210,3 +212,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-1931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||Añadir ajuste SoulSavior.Enabled
 
 // 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio
+
+// 2026-10-02-0039||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||Añadir ajuste CardUsage.Enabled para contador histórico

@@ -165,6 +165,28 @@ names, highest soul tier won and highest difficulty won. Those are independent r
 from **ExpandedWinTracker by Conductor**, and can come from different victories.
 Clan combination pages follow the soul catalog. The left panel summarizes the current view.
 
+## Clan details and missing victories
+
+On clan pages, mouse focus or controller selection updates the left panel with missing
+allies and the highest Soul Savior difficulty won by each champion. Browse missing allies
+in batches with the panel button. The **Without a win** button hides completed combinations;
+progress totals still include all allies. Soul entries use the game’s native navigation and
+tooltips. Compact panels keep full text available in a tooltip.
+
+## Historical card plays
+
+Card tooltips show actual plays since this feature was installed: **direct**, **automatic**,
+and a Soul Savior subtotal. Copies and upgrades share the base card ID. Summoning a unit
+counts as a card play; its subsequent attacks and unit/room abilities do not. Previews and
+replay playback are excluded. Real plays before an undo or battle restart remain counted,
+so this measures usage across attempts. Previous usage cannot be reconstructed.
+
+Set `[CardUsage] Enabled = false` in the mod’s configuration to disable tracking and its
+tooltip. These counts are stored by CustomClanUIFixes in
+`BepInEx/config/CustomClanUIFixes/card-usage.json`, with a previous-state `.bak` copy.
+They are separate from ExpandedWinTracker’s Soul Savior victory records. Game saves and
+ExpandedWinTracker records are left untouched.
+
 ## Building
 
 See `COMO-COMPILAR.md`. GitHub Actions builds the DLL on every push that touches `src/`.
@@ -354,3 +376,5 @@ El seguimiento Soul Savior utiliza **ExpandedWinTracker by Conductor**: registra
 <!-- 2026-09-30-2242||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||README público 0.4.5: resumen lateral, idiomas y dependencia; retirar notas internas de pruebas e instalación -->
 
 <!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Explicar catálogo de almas, navegación y máximos independientes -->
+
+<!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentación pública de panel, filtro, navegación y contador propio: origen, exclusiones, intentos y ubicación/configuración -->

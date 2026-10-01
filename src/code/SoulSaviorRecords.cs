@@ -102,6 +102,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         public int Get(string main, string ally, int champion)
             => wins.TryGetValue((main, ally, champion), out int level) ? level : -1;
 
+        public int ChampionBest(string main, int champion, IEnumerable<string> allies)
+        {
+            int best = -1;
+            foreach (var ally in new HashSet<string>(allies))
+                if (ally != main) best = Math.Max(best, Get(main, ally, champion));
+            return best;
+        }
+
         public int Best(string main, string ally)
         {
             int best = -1;
@@ -119,3 +127,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2241||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Resumen por IDs distintos: parejas direccionales, sin duplicar campeones ni clanes y con ausencia distinta de victoria S0
 
 // 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Leer soulWins con máximos independientes, duplicados, ausencia y claves compatibles con ExpandedWinTracker
+
+// 2026-10-02-0031||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Mejora 3: máximo por campeón para los aliados instalados sin autoalianzas ni duplicados

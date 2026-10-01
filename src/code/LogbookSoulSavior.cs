@@ -10,6 +10,7 @@ using ShinyShoe;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace mt2_custom_clan_ui_fixes.Plugin
 {
@@ -162,6 +163,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             {
                 var row = UnityEngine.Object.Instantiate(template, grid, false);
                 row.gameObject.name = "Soul Savior " + clan.GetTitle();
+                var focus = row.gameObject.AddComponent<SoulSaviorClanFocus>();
+                focus.Clan = clan;
+                var rowButton = row.gameObject.GetComponent<GameUISelectableButton>()
+                    ?? row.gameObject.AddComponent<GameUISelectableButton>();
+                rowButton.targetGraphic = LogbookSoulSavior.Field<Image>(row, "clanIcon");
+                rowButton.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
                 // Normalizar SOLO la copia: puede heredar aliados ya rebalanceados.
                 var top = LogbookSoulSavior.Field<LayoutGroup>(row, "subclanVictoryLayout")!;
                 foreach (var flag in row.GetComponentsInChildren<SubclanVictoryItem>(true))
@@ -174,7 +181,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         public override IGameUIComponent? GetDefaultGameUISelectable()
-            => rows.FirstOrDefault()?.GetDefaultGameUISelectable();
+            => rows.SelectMany(r => r.GetComponentsInChildren<SubclanVictoryItem>())
+                .Where(f => f.gameObject.activeInHierarchy).Select(f => f.GetComponent<IGameUIComponent>()).FirstOrDefault()
+                ?? rows.FirstOrDefault()?.GetComponent<GameUISelectableButton>();
 
         public override void Open()
         {
@@ -182,6 +191,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             try
             {
                 RefreshRecords();
+                GetComponentInParent<SoulSaviorSection>()?.EnsureSelectedClan(classes);
                 Adjust();
                 StartCoroutine(Settle());
             }
@@ -246,6 +256,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (portraits != null)
                     foreach (var portrait in portraits) portrait.SetMastered(false);
                 ShowSummary(row, classes[i], records);
+                if (GetComponentInParent<SoulSaviorSection>()?.ShowPendingOnly == true)
+                    foreach (var flag in row.GetComponentsInChildren<SubclanVictoryItem>())
+                        if (flag.data != null && records.Best(classes[i].GetID(), flag.data.subClassData.GetID()) >= 0)
+                            flag.gameObject.SetActive(false);
             }
         }
 
@@ -326,6 +340,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             label.fontSize = size;
             label.alignment = TextAlignmentOptions.TopLeft;
             label.raycastTarget = false;
+            label.overflowMode = TextOverflowModes.Ellipsis;
             return label;
         }
 
@@ -350,9 +365,29 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
     }
+    public sealed class SoulSaviorFocusRelay : MonoBehaviour
+    {
+        void OnEnable() => UISignals.GameUITriggered.AddListener(Focus);
+        void OnDisable() => UISignals.GameUITriggered.RemoveListener(Focus);
+        void Focus(CoreInputControlMapping mapping, IGameUIComponent target)
+        {
+            var row = target?.component?.GetComponentInParent<SoulSaviorClanFocus>();
+            if (row != null && row.isActiveAndEnabled && row.GetComponentInParent<SoulSaviorSection>() == GetComponent<SoulSaviorSection>())
+                GetComponent<SoulSaviorSection>().SelectClan(row.Clan);
+        }
+    }
+
+    public sealed class SoulSaviorClanFocus : MonoBehaviour, IPointerEnterHandler, ISelectHandler
+    {
+        internal ClassData? Clan;
+        void Focus() => GetComponentInParent<SoulSaviorSection>()?.SelectClan(Clan);
+        public void OnPointerEnter(PointerEventData data) => Focus();
+        public void OnSelect(BaseEventData data) => Focus();
+    }
+
     public sealed class SoulSaviorSoulsPage : ChecklistPage
     {
-        readonly List<(SoulData Soul, Image Icon, TMP_Text Name, TMP_Text Record)> items = new();
+        readonly List<(SoulData Soul, Image Icon, TMP_Text Name, TMP_Text Record, GameUISelectableButton Button, TooltipProviderComponent Tooltip)> items = new();
         RectTransform? grid;
         GridLayoutGroup? layout;
         TMP_Text? heading;
@@ -382,7 +417,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 row.transform.SetParent(grid, false);
                 var background = row.GetComponent<Image>();
                 background.color = new Color(0.10f, 0.08f, 0.04f, 0.16f);
-                background.raycastTarget = false;
+                background.raycastTarget = true;
+                var button = row.AddComponent<GameUISelectableButton>();
+                button.targetGraphic = background;
+                button.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
+                var tooltip = row.AddComponent<TooltipProviderComponent>();
                 var iconObject = new GameObject("Soul icon", typeof(RectTransform), typeof(Image));
                 iconObject.transform.SetParent(row.transform, false);
                 var icon = iconObject.GetComponent<Image>();
@@ -400,7 +439,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 name.fontSizeMax = 26f;
                 var record = SoulSaviorChecklistPage.Label(template, row.transform, "Soul record",
                     86f, -77f, 330f, 52f, 20f);
-                items.Add((soul, icon, name, record));
+                record.enableAutoSizing = true;
+                record.fontSizeMin = 14f;
+                record.fontSizeMax = 20f;
+                items.Add((soul, icon, name, record, button, tooltip));
             }
             Resize();
         }
@@ -418,6 +460,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (heading != null) heading.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, grid.rect.width);
             if (note != null) note.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, grid.rect.width);
         }
+        public override IGameUIComponent? GetDefaultGameUISelectable() => items.FirstOrDefault().Button;
         void LateUpdate() => Resize();
 
         public override void Open()
@@ -436,6 +479,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     var win = records.Soul(SoulSaviorRecords.SoulKey(item.Soul.name));
                     item.Record.text = win.Difficulty < 0 ? SoulSaviorText.Get(4)
                         : SoulSaviorText.Get(14, win.Tier, "S" + win.Difficulty);
+                    item.Tooltip.SetTooltipLocalized(item.Soul.GetName(), item.Soul.GetDescription()
+                        + "\n\n" + item.Record.text, TooltipDesigner.TooltipDesignType.DefaultWide);
                     item.Icon.color = win.Difficulty < 0 ? new Color(0.55f, 0.55f, 0.55f, 0.75f) : Color.white;
                 }
             }
@@ -461,10 +506,18 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         internal readonly List<SoulData> SoulCatalog = new();
         internal CompendiumTab? Tab;
         readonly List<ClassData> sidebarClasses = new();
+        internal ClassData? SelectedClan;
+        internal int PendingPage;
+        internal int PendingPageCount = 1;
         RectTransform? sidebar;
         TMP_Text? sidebarBody;
         TMP_Text? sidebarLegend;
         TMP_Text? sidebarCredit;
+        GameUISelectableButton? nextPending;
+        GameUISelectableButton? pendingFilter;
+        TMP_Text? pendingFilterLabel;
+        internal bool ShowPendingOnly;
+        TMP_Text? nextPendingLabel;
         TMP_Text? fontReference;
         string sidebarLanguage = "";
         protected override int PageCount => Pages.Count;
@@ -473,6 +526,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         {
             _section = (CompendiumScreen.Section)8;
             mainNavLayer = gameObject.AddComponent<BaseNavigationLayer>();
+            gameObject.AddComponent<SoulSaviorFocusRelay>();
             pageCountLabel = (TextMeshProUGUI)AccessTools.Field(typeof(PaginatedCompendiumSection),
                 "pageCountLabel").GetValue(source);
             pageCountKey = (string)AccessTools.Field(typeof(PaginatedCompendiumSection),
@@ -545,11 +599,61 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
                 "Soul Savior overview title", 0f, 0f, 340f, 64f, 36f).text = "Soul Savior";
             sidebarBody = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
-                "Soul Savior overview totals", 0f, -90f, 340f, 340f, 25f);
+                "Soul Savior overview totals", 0f, -90f, 340f, 440f, 24f);
+            sidebarBody.enableAutoSizing = true;
+            sidebarBody.fontSizeMin = 14f;
+            sidebarBody.fontSizeMax = 24f;
+            sidebarBody.gameObject.AddComponent<GameUISelectable>();
+            sidebarBody.gameObject.AddComponent<TooltipProviderComponent>();
+            sidebarBody.raycastTarget = true;
+            nextPending = SidebarButton(labelTemplate, "Next pending allies", -545f, () =>
+            {
+                PendingPage = (PendingPage + 1) % PendingPageCount;
+                RefreshSidebar();
+            }, out nextPendingLabel);
+            pendingFilter = SidebarButton(labelTemplate, "Pending combination filter", -595f, () =>
+            {
+                ShowPendingOnly = !ShowPendingOnly;
+                RefreshPage();
+            }, out pendingFilterLabel);
             sidebarLegend = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
                 "Soul Savior overview legend", 0f, -460f, 340f, 170f, 20f);
             sidebarCredit = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
                 "Soul Savior overview credit", 0f, -665f, 340f, 80f, 18f);
+        }
+
+        GameUISelectableButton SidebarButton(TMP_Text template, string name, float y,
+            UnityEngine.Events.UnityAction action, out TMP_Text caption)
+        {
+            var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(GameUISelectableButton));
+            obj.transform.SetParent(sidebar, false);
+            var rect = (RectTransform)obj.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(0f, y);
+            rect.sizeDelta = new Vector2(340f, 44f);
+            var button = obj.GetComponent<GameUISelectableButton>();
+            button.targetGraphic = obj.GetComponent<Image>();
+            button.targetGraphic.color = new Color(0.45f, 0.33f, 0.18f, 0.35f);
+            button.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
+            button.onClick.AddListener(action);
+            caption = SoulSaviorChecklistPage.Label(template, rect, name + " text", 8f, -5f, 324f, 34f, 22f);
+            caption.enableAutoSizing = true;
+            caption.fontSizeMin = 16f;
+            caption.fontSizeMax = 22f;
+            return button;
+        }
+
+        internal void EnsureSelectedClan(List<ClassData> visible)
+        {
+            if (SelectedClan == null || !visible.Contains(SelectedClan))
+                SelectClan(visible.FirstOrDefault());
+        }
+        internal void SelectClan(ClassData? clan)
+        {
+            if (SelectedClan == clan) return;
+            SelectedClan = clan;
+            PendingPage = 0;
+            RefreshSidebar();
         }
 
         void RefreshSidebar()
@@ -566,6 +670,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 var records = SoulSaviorRecords.Read(input);
                 var (won, possible, clansWon, clanCount, best) = records.Overview(sidebarClasses.Select(c => c.GetID()));
                 bool soulView = Pages.Count > currentPageIndex && Pages[currentPageIndex] is SoulSaviorSoulsPage;
+                if (pendingFilter != null) pendingFilter.gameObject.SetActive(!soulView);
+                if (pendingFilterLabel != null) pendingFilterLabel.text = SoulSaviorText.Extra(ShowPendingOnly ? "Missing" : "All");
+                if (soulView && nextPending != null) nextPending.gameObject.SetActive(false);
                 int soulWon = SoulCatalog.Count(s => records.Soul(SoulSaviorRecords.SoulKey(s.name)).Difficulty >= 0);
                 sidebarBody.text = soulView
                     ? SoulSaviorText.Get(16) + "\n<size=38>" + soulWon + " / " + SoulCatalog.Count + "</size>"
@@ -573,10 +680,42 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     + "</size>\n\n" + SoulSaviorText.Get(9) + "\n<size=34>" + clansWon + " / "
                     + clanCount + "</size>\n\n" + SoulSaviorText.Get(10)
                     + "\n<size=34>" + (best < 0 ? "—" : "S" + best) + "</size>";
+                if (!soulView && SelectedClan != null)
+                {
+                    var allies = sidebarClasses.Where(c => c.GetID() != SelectedClan.GetID()).ToList();
+                    var pending = allies.Where(c => records.Best(SelectedClan.GetID(), c.GetID()) < 0).ToList();
+                    PendingPageCount = Math.Max(1, (pending.Count + 7) / 8);
+                    PendingPage = Mathf.Clamp(PendingPage, 0, PendingPageCount - 1);
+                    var body = new System.Text.StringBuilder();
+                    body.Append("<size=30>").Append(SelectedClan.GetTitle()).Append("</size>\n")
+                        .Append(allies.Count - pending.Count).Append(" / ").Append(allies.Count).Append("\n\n");
+                    for (int champion = 0; champion < 2; champion++)
+                    {
+                        var card = SelectedClan.GetChampionData(champion)?.championCardData;
+                        if (card == null) continue;
+                        int level = records.ChampionBest(SelectedClan.GetID(), champion, allies.Select(c => c.GetID()));
+                        body.Append(card.GetName()).Append(": ").Append(level < 0 ? "—" : "S" + level).Append("\n");
+                    }
+                    body.Append("\n").Append(SoulSaviorText.Extra("Pending")).Append(": ").Append(pending.Count)
+                        .Append("\n");
+                    foreach (var ally in pending.Skip(PendingPage * 8).Take(8))
+                        body.Append("• ").Append(ally.GetTitle()).Append("\n");
+                    if (pending.Count == 0) body.Append(SoulSaviorText.Extra("Complete"));
+                    sidebarBody.text = body.ToString();
+                    if (nextPending != null) nextPending.gameObject.SetActive(PendingPageCount > 1);
+                    if (nextPendingLabel != null) nextPendingLabel.text = SoulSaviorText.Extra("Next")
+                        + " (" + (PendingPage + 1) + "/" + PendingPageCount + ")";
+                }
+
+                var panelTooltip = sidebarBody.GetComponent<TooltipProviderComponent>();
+                if (panelTooltip != null) panelTooltip.SetTooltipLocalized("Soul Savior",
+                    sidebarBody.text, TooltipDesigner.TooltipDesignType.DefaultWide);
             }
             catch (Exception e)
             {
                 sidebarBody.text = SoulSaviorText.Get(2);
+                sidebarBody.GetComponent<TooltipProviderComponent>()?.SetTooltipLocalized("Soul Savior",
+                    sidebarBody.text, TooltipDesigner.TooltipDesignType.DefaultWide);
                 Plugin.Logger.LogWarning("[SoulSavior] Resumen no disponible: " + e.Message);
             }
         }
@@ -602,8 +741,35 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             sidebar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             sidebar.position = root.TransformPoint(new Vector3(root.rect.xMin + 24f,
                 root.rect.yMax - 150f, 0f));
+            float bodyHeight = Mathf.Clamp(root.rect.height - 560f, 140f, 500f);
+            if (sidebarBody != null) sidebarBody.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bodyHeight);
+            if (nextPending != null)
+            {
+                var rect = (RectTransform)nextPending.transform;
+                rect.anchoredPosition = new Vector2(0f, -100f - bodyHeight);
+                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            }
+            if (pendingFilter != null)
+            {
+                var rect = (RectTransform)pendingFilter.transform;
+                rect.anchoredPosition = new Vector2(0f, -150f - bodyHeight);
+                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            }
+            if (pendingFilterLabel != null) pendingFilterLabel.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 16f);
+            if (nextPendingLabel != null) nextPendingLabel.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 16f);
+            if (sidebarLegend != null)
+            {
+                sidebarLegend.rectTransform.anchoredPosition = new Vector2(0f, -205f - bodyHeight);
+                sidebarLegend.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 115f);
+                sidebarLegend.enableAutoSizing = true;
+                sidebarLegend.fontSizeMin = 14f;
+                sidebarLegend.fontSizeMax = 20f;
+            }
+            if (sidebarCredit != null)
+                sidebarCredit.rectTransform.anchoredPosition = new Vector2(0f, -325f - bodyHeight);
             foreach (var text in sidebar.GetComponentsInChildren<TMP_Text>())
-                text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+                text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
+                    text.GetComponentInParent<GameUISelectableButton>() != null ? width - 16f : width);
         }
     }
 
@@ -789,3 +955,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Añadir páginas de almas antes de clanes en la misma pestaña; catálogo del juego por familia y resumen contextual
 
 // 2026-10-01-2325||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Vista de quince familias de almas por página: iconos, nombres localizados, máximos independientes, vacío y error sin datos obsoletos
+
+// 2026-10-02-0031||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Mejora 3: panel del clan enfocado por cursor o mando; aliados pendientes por bloques y máximo de cada campeón
+
+// 2026-10-02-0033||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Mejora 5: selección nativa de almas y tooltips, foco visible, botón de pendientes y tamaños adaptativos sin desbordar texto
+
+// 2026-10-02-0035||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Mejora 2: filtro Sin victoria, contadores completos y foco de clanes completos; reparar lectura cp1252 accidental de UTF-8 del paso anterior
+
+// 2026-10-02-0044||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Conectar panel al foco nativo de mouse y mando con señales y retirada de listeners al ocultarse, sin depender de foco almacenado
+
+// 2026-10-02-0047||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Ajuste compacto: reservar pie según alto, evitar desbordes y ofrecer texto completo del panel en tooltip; conservar margen interior de botones
+
+// 2026-10-02-0047||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Corregir posición de llave del tooltip dentro de try; borrar también contenido de tooltip ante fallo de lectura

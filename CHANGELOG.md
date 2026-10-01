@@ -4,6 +4,14 @@
 
 ## Español
 
+### 0.4.7
+
+- Panel del clan seleccionado: aliados pendientes y mejor dificultad de cada campeón. Sigue el cursor y la selección con mando.
+- Navegación nativa en el catálogo de almas, tooltips y texto adaptable; los aliados pendientes se recorren por bloques.
+- Filtro «Sin victoria» para las combinaciones de Soul Savior, conservando los contadores completos.
+- Contador histórico de cartas en sus tooltips, con jugadas directas y automáticas separadas y subtotal Soul Savior. Agrupa copias y mejoras de la misma carta.
+- El recuento empieza al instalar esta función. Excluye habilidades, simulaciones y replays; conserva las jugadas reales previas a deshacer o reiniciar un combate.
+
 ### 0.4.6
 
 - Seguimiento por alma en la pestaña Soul Savior, con iconos y nombres en el idioma del juego.
@@ -49,6 +57,14 @@
 - Opciones de configuración para ajustar o desactivar los cambios de interfaz.
 
 ## English
+
+### 0.4.7
+
+- Selected-clan panel with missing allies and each champion’s highest difficulty. Follows mouse focus and controller selection.
+- Native navigation for soul entries, tooltips and adaptive text; missing allies can be browsed in batches.
+- “Without a win” filter for Soul Savior combinations, while keeping full progress totals.
+- Historical card-play counts in card tooltips, separating direct and automatic plays and showing a Soul Savior subtotal. Copies and upgrades share the same base-card count.
+- Counts start when this feature is installed. Abilities, previews and replays are excluded; real plays before an undo or battle restart remain counted.
 
 ### 0.4.6
 
@@ -115,3 +131,5 @@
 <!-- 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Reescribir changelog para jugadores; agrupar iteraciones internas bajo 0.4.4; mantener español/inglés y añadir novedades 0.4.5 -->
 
 <!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.6 centrado en seguimiento de almas -->
+
+<!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.7: cuatro mejoras y reglas del contador, sin notas de pruebas internas -->
