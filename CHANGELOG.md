@@ -4,6 +4,12 @@
 
 ## Español
 
+### 0.4.6
+
+- Seguimiento por alma en la pestaña Soul Savior, con iconos y nombres en el idioma del juego.
+- Quince almas por página y resumen de almas con victoria; las combinaciones de clanes siguen después del catálogo.
+- Nivel máximo del alma y dificultad máxima mostrados como récords independientes de ExpandedWinTracker.
+
 ### 0.4.5
 
 - Nuevo resumen de Soul Savior en el panel izquierdo: combinaciones ganadas, clanes con victorias y máxima dificultad alcanzada.
@@ -43,6 +49,12 @@
 - Opciones de configuración para ajustar o desactivar los cambios de interfaz.
 
 ## English
+
+### 0.4.6
+
+- Soul tracking in the Soul Savior tab, with icons and names in the selected game language.
+- Fifteen souls per page and a summary of souls with a win; clan combinations follow the soul catalog.
+- Highest soul tier and highest difficulty shown as independent records from ExpandedWinTracker.
 
 ### 0.4.5
 
@@ -101,3 +113,5 @@
 <!-- 2026-09-30-2221||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog bilingüe completo: español primero, enlace English follows al inicio; actualizar instalación 0.4.4 y fallos confirmados 0.4.3 -->
 
 <!-- 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Reescribir changelog para jugadores; agrupar iteraciones internas bajo 0.4.4; mantener español/inglés y añadir novedades 0.4.5 -->
+
+<!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.6 centrado en seguimiento de almas -->

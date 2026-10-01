@@ -28,7 +28,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var pages = __instance.ChecklistPages;
             var target = __instance.GetComponentInParent<CompendiumScreen>()?.GetComponentInChildren<SoulSaviorSection>(true);
             if (target == null || target.Pages.Count != 0) return;
-            var added = new List<SoulSaviorChecklistPage>();
+            var added = new List<ChecklistPage>();
             try
             {
                 var save = AccessTools.Field(typeof(CompendiumSection), "saveManager")
@@ -49,6 +49,26 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         && (c.GetRequiredDlc() == DLC.None || save.IsDlcInstalled(c.GetRequiredDlc()))
                         && (!c.IsCrew() || save.GetMetagameSave()
                             .IsFeatureUnlocked(MetagameSaveData.UnlockedFeature.Crew))).ToList();
+                var soulCatalog = save.GetAllGameData().GetAllSoulDatas()
+                    .Where(s => s != null && !s.IsHidden
+                        && (s.GetRequiredDLC() == DLC.None || save.IsDlcInstalled(s.GetRequiredDLC())))
+                    .GroupBy(s => SoulSaviorRecords.SoulKey(s.name), StringComparer.Ordinal)
+                    .Select(g => g.OrderBy(s => s.GetTierLevel()).First())
+                    .OrderBy(s => s.GetName(), StringComparer.CurrentCulture).ToList();
+                const int soulsPerPage = 15;
+                for (int page = 0; page * soulsPerPage < soulCatalog.Count; page++)
+                {
+                    var obj = new GameObject("Soul Savior souls " + (page + 1), typeof(RectTransform));
+                    obj.SetActive(false);
+                    obj.transform.SetParent(target.transform, false);
+                    CopyRect((RectTransform)source.transform, (RectTransform)obj.transform);
+                    var view = obj.AddComponent<SoulSaviorSoulsPage>();
+                    added.Add(view);
+                    view.Build((RectTransform)layout.transform,
+                        Field<TMP_Text>(template, "clanNameLabel")!,
+                        soulCatalog.Skip(page * soulsPerPage).Take(soulsPerPage).ToList());
+                }
+                target.SoulCatalog.AddRange(soulCatalog);
                 const int perPage = 5;
                 int count = (classes.Count + perPage - 1) / perPage;
                 for (int page = 0; page < count; page++)
@@ -330,9 +350,115 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
     }
+    public sealed class SoulSaviorSoulsPage : ChecklistPage
+    {
+        readonly List<(SoulData Soul, Image Icon, TMP_Text Name, TMP_Text Record)> items = new();
+        RectTransform? grid;
+        GridLayoutGroup? layout;
+        TMP_Text? heading;
+        TMP_Text? note;
+
+        internal void Build(RectTransform sourceLayout, TMP_Text template, List<SoulData> souls)
+        {
+            var obj = new GameObject("Soul Savior rows", typeof(RectTransform), typeof(GridLayoutGroup));
+            obj.transform.SetParent(transform, false);
+            grid = (RectTransform)obj.transform;
+            LogbookSoulSavior.CopyRect(sourceLayout, grid);
+            grid.anchoredPosition += new Vector2(0f, -48f);
+            layout = obj.GetComponent<GridLayoutGroup>();
+            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            layout.constraintCount = 3;
+            layout.spacing = new Vector2(16f, 14f);
+            layout.childAlignment = TextAnchor.UpperLeft;
+            layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            layout.startAxis = GridLayoutGroup.Axis.Horizontal;
+            heading = SoulSaviorChecklistPage.Label(template, grid, "Soul catalog heading",
+                0f, 48f, 1400f, 42f, 30f);
+            note = SoulSaviorChecklistPage.Label(template, grid, "Soul catalog note",
+                0f, -755f, 1400f, 62f, 20f);
+            foreach (var soul in souls)
+            {
+                var row = new GameObject("Soul " + soul.name, typeof(RectTransform), typeof(Image));
+                row.transform.SetParent(grid, false);
+                var background = row.GetComponent<Image>();
+                background.color = new Color(0.10f, 0.08f, 0.04f, 0.16f);
+                background.raycastTarget = false;
+                var iconObject = new GameObject("Soul icon", typeof(RectTransform), typeof(Image));
+                iconObject.transform.SetParent(row.transform, false);
+                var icon = iconObject.GetComponent<Image>();
+                icon.sprite = soul.GetIcon();
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+                var rect = icon.rectTransform;
+                rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+                rect.anchoredPosition = new Vector2(12f, -16f);
+                rect.sizeDelta = new Vector2(60f, 60f);
+                var name = SoulSaviorChecklistPage.Label(template, row.transform, "Soul name",
+                    86f, -10f, 330f, 64f, 26f);
+                name.enableAutoSizing = true;
+                name.fontSizeMin = 18f;
+                name.fontSizeMax = 26f;
+                var record = SoulSaviorChecklistPage.Label(template, row.transform, "Soul record",
+                    86f, -77f, 330f, 52f, 20f);
+                items.Add((soul, icon, name, record));
+            }
+            Resize();
+        }
+
+        void Resize()
+        {
+            if (grid == null || layout == null) return;
+            float width = Mathf.Max(280f, (grid.rect.width - 32f) / 3f);
+            layout.cellSize = new Vector2(width, 136f);
+            foreach (var item in items)
+            {
+                item.Name.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 98f);
+                item.Record.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 98f);
+            }
+            if (heading != null) heading.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, grid.rect.width);
+            if (note != null) note.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, grid.rect.width);
+        }
+        void LateUpdate() => Resize();
+
+        public override void Open()
+        {
+            base.Open();
+            if (heading != null) heading.text = "Soul Savior · " + SoulSaviorText.Get(13);
+            if (note != null) note.text = SoulSaviorText.Get(15);
+            try
+            {
+                using var input = File.Open(LogbookSoulSavior.SavePath, FileMode.Open,
+                    FileAccess.Read, FileShare.ReadWrite);
+                var records = SoulSaviorRecords.Read(input);
+                foreach (var item in items)
+                {
+                    item.Name.text = item.Soul.GetName();
+                    var win = records.Soul(SoulSaviorRecords.SoulKey(item.Soul.name));
+                    item.Record.text = win.Difficulty < 0 ? SoulSaviorText.Get(4)
+                        : SoulSaviorText.Get(14, win.Tier, "S" + win.Difficulty);
+                    item.Icon.color = win.Difficulty < 0 ? new Color(0.55f, 0.55f, 0.55f, 0.75f) : Color.white;
+                }
+            }
+            catch (Exception e)
+            {
+                // Never leave results from the last successful read visible after a read error.
+                foreach (var item in items)
+                {
+                    item.Name.text = item.Soul.GetName();
+                    item.Record.text = "—";
+                    item.Icon.color = Color.gray;
+                }
+                if (note != null) note.text = SoulSaviorText.Get(2);
+                Plugin.Logger.LogWarning("[SoulSavior] Almas no disponibles: " + e.Message);
+            }
+            Resize();
+        }
+    }
+
     public sealed class SoulSaviorSection : PaginatedCompendiumSection
     {
-        internal readonly List<SoulSaviorChecklistPage> Pages = new();
+        internal readonly List<ChecklistPage> Pages = new();
+        internal readonly List<SoulData> SoulCatalog = new();
         internal CompendiumTab? Tab;
         readonly List<ClassData> sidebarClasses = new();
         RectTransform? sidebar;
@@ -430,7 +556,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         {
             sidebarLanguage = I2.Loc.LocalizationManager.CurrentLanguageCode;
             if (sidebarBody == null) return;
-            if (sidebarLegend != null) sidebarLegend.text = SoulSaviorText.Get(11);
+            if (sidebarLegend != null) sidebarLegend.text = SoulSaviorText.Get(
+                Pages.Count > currentPageIndex && Pages[currentPageIndex] is SoulSaviorSoulsPage ? 15 : 11);
             if (sidebarCredit != null) sidebarCredit.text = SoulSaviorText.Get(12);
             try
             {
@@ -438,7 +565,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 var records = SoulSaviorRecords.Read(input);
                 var (won, possible, clansWon, clanCount, best) = records.Overview(sidebarClasses.Select(c => c.GetID()));
-                sidebarBody.text = SoulSaviorText.Get(8) + "\n<size=38>" + won + " / " + possible
+                bool soulView = Pages.Count > currentPageIndex && Pages[currentPageIndex] is SoulSaviorSoulsPage;
+                int soulWon = SoulCatalog.Count(s => records.Soul(SoulSaviorRecords.SoulKey(s.name)).Difficulty >= 0);
+                sidebarBody.text = soulView
+                    ? SoulSaviorText.Get(16) + "\n<size=38>" + soulWon + " / " + SoulCatalog.Count + "</size>"
+                    : SoulSaviorText.Get(8) + "\n<size=38>" + won + " / " + possible
                     + "</size>\n\n" + SoulSaviorText.Get(9) + "\n<size=34>" + clansWon + " / "
                     + clanCount + "</size>\n\n" + SoulSaviorText.Get(10)
                     + "\n<size=34>" + (best < 0 ? "—" : "S" + best) + "</size>";
@@ -654,3 +785,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2236||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Resumen lateral con combinaciones, clanes, dificultad, leyenda y crédito; iconos normal/seleccionado ajustados; cambio de idioma en vivo
 
 // 2026-09-30-2241||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar resumen probado del lector y actualizar fuente/material nativos al cambiar idioma
+
+// 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Añadir páginas de almas antes de clanes en la misma pestaña; catálogo del juego por familia y resumen contextual
+
+// 2026-10-01-2325||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Vista de quince familias de almas por página: iconos, nombres localizados, máximos independientes, vacío y error sin datos obsoletos

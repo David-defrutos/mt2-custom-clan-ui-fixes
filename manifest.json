@@ -2,7 +2,7 @@
   "namespace": "frutos",
   "name": "CustomClanUIFixes",
   "description": "UI fixes for playing Monster Train 2 with many clans installed",
-  "version_number": "0.4.5",
+  "version_number": "0.4.6",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2100",
     "Conductor-ExpandedWinTracker-0.0.1"

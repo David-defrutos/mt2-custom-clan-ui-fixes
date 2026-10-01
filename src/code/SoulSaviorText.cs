@@ -24,13 +24,30 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             ["zh-hant"] = new[] { "最高獲勝難度 · 懸停旗幟查看勇者詳情", "尚無Soul Savior勝利紀錄。", "無法讀取Soul Savior紀錄。", "無法顯示Soul Savior紀錄。", "無勝利紀錄", "難度 {0}", "{0} / {1}\n獲勝\n盟友", "按主氏族與盟友氏族查看勝利紀錄。", "獲勝氏族組合", "有勝利紀錄的氏族", "最高獲勝難度", "S0、S1…：最高獲勝難度\n—：無勝利紀錄\n\n懸停盟友旗幟可查看勇者詳情。", "紀錄：ExpandedWinTracker\nBrandon / Conductor" }
         };
 
+        static readonly Dictionary<string, string[]> SoulTerms = new()
+        {
+            ["en"] = new[] { "Souls", "Highest soul tier: {0} · Highest difficulty: {1}", "Soul tier and difficulty are independent records. They may come from different wins.\nUse the arrows to browse souls, then clan combinations.", "Souls with a win" },
+            ["es"] = new[] { "Almas", "Nivel máximo del alma: {0} · Dificultad máxima: {1}", "El nivel del alma y la dificultad son récords independientes. Pueden proceder de victorias distintas.\nLas flechas recorren las almas y después las combinaciones de clanes.", "Almas con victoria" },
+            ["fr"] = new[] { "Âmes", "Niveau d’âme maximal : {0} · Difficulté maximale : {1}", "Le niveau d’âme et la difficulté sont des records indépendants, issus éventuellement de victoires différentes.\nLes flèches parcourent les âmes, puis les combinaisons de clans.", "Âmes avec une victoire" },
+            ["de"] = new[] { "Seelen", "Höchste Seelenstufe: {0} · Höchste Schwierigkeit: {1}", "Seelenstufe und Schwierigkeit sind unabhängige Rekorde und können aus verschiedenen Siegen stammen.\nMit den Pfeilen zuerst Seelen, dann Clan-Kombinationen durchblättern.", "Seelen mit einem Sieg" },
+            ["it"] = new[] { "Anime", "Livello massimo dell’anima: {0} · Difficoltà massima: {1}", "Livello dell’anima e difficoltà sono record indipendenti, ottenuti anche in vittorie diverse.\nLe frecce scorrono le anime e poi le combinazioni di clan.", "Anime con una vittoria" },
+            ["pt"] = new[] { "Almas", "Nível máximo da alma: {0} · Dificuldade máxima: {1}", "Nível da alma e dificuldade são recordes independentes e podem vir de vitórias diferentes.\nAs setas percorrem as almas e depois as combinações de clãs.", "Almas com vitória" },
+            ["pl"] = new[] { "Dusze", "Najwyższy poziom duszy: {0} · Najwyższa trudność: {1}", "Poziom duszy i trudność to niezależne rekordy z potencjalnie różnych zwycięstw.\nStrzałki przewijają dusze, a następnie kombinacje klanów.", "Dusze ze zwycięstwem" },
+            ["ru"] = new[] { "Души", "Максимальный уровень души: {0} · Максимальная сложность: {1}", "Уровень души и сложность — независимые рекорды из возможных разных побед.\nСтрелки показывают души, затем сочетания кланов.", "Души с победой" },
+            ["ja"] = new[] { "ソウル", "ソウルの最高レベル：{0} · 最高難易度：{1}", "ソウルレベルと難易度は別々の記録です。異なる勝利で達成した場合があります。\n矢印でソウル、次にクランの組み合わせを表示します。", "勝利記録のあるソウル" },
+            ["ko"] = new[] { "영혼", "영혼 최고 단계: {0} · 최고 난이도: {1}", "영혼 단계와 난이도는 별개의 기록이며 서로 다른 승리에서 달성했을 수 있습니다.\n화살표로 영혼, 그다음 클랜 조합을 확인합니다.", "승리 기록이 있는 영혼" },
+            ["zh"] = new[] { "灵魂", "灵魂最高等级：{0} · 最高难度：{1}", "灵魂等级和难度是独立记录，可能来自不同的胜利。\n使用箭头先浏览灵魂，再浏览氏族组合。", "有胜利记录的灵魂" },
+            ["zh-hant"] = new[] { "靈魂", "靈魂最高等級：{0} · 最高難度：{1}", "靈魂等級和難度是獨立紀錄，可能來自不同的勝利。\n使用箭頭先瀏覽靈魂，再瀏覽氏族組合。", "有勝利紀錄的靈魂" }
+        };
+
         internal static string ForLanguage(string? code, int key)
         {
             string language = (code ?? "en").ToLowerInvariant().Replace('_', '-');
             if (language.StartsWith("zh-tw") || language.StartsWith("zh-hk")
                 || language.StartsWith("zh-hant")) language = "zh-hant";
             else language = language.Split('-')[0];
-            return (Languages.TryGetValue(language, out var values) ? values : Languages["en"])[key];
+            var catalog = key >= 13 ? SoulTerms : Languages;
+            return (catalog.TryGetValue(language, out var values) ? values : catalog["en"])[key >= 13 ? key - 13 : key];
         }
         internal static string Get(int key, params object[] args)
             => string.Format(ForLanguage(LocalizationManager.CurrentLanguageCode, key), args);
@@ -38,3 +55,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 }
 // 2026-09-30-2235||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorText.cs||Textos de Soul Savior según idioma I2 activo, variantes regionales, 12 tablas y fallback inglés
 // 2026-09-30-2245||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorText.cs||Corregir traducciones del contador de alianzas: victorias con aliados, no aliados derrotados
+
+// 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorText.cs||Añadir textos de catálogo de almas, niveles y máximos independientes en los doce idiomas

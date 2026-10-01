@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>mt2_custom_clan_ui_fixes.Plugin</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>0.4.5</Version>
+    <Version>0.4.6</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,3 +40,5 @@
 <!-- 2026-09-30-2209||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Preparar metadatos y compilación 0.4.4 sin modificar comentarios históricos -->
 
 <!-- 2026-09-30-2242||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Preparar versión 0.4.5 con resumen, traducciones, icono y dependencia ExpandedWinTracker -->
+
+<!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\mt2_custom_clan_ui_fixes.Plugin.csproj||Preparar 0.4.6 con seguimiento por familias de almas; conservar comentarios históricos -->

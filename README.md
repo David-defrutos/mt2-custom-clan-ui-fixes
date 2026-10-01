@@ -158,6 +158,13 @@ also works on the logbook: it lists the champion upgrade and artifacts pages in 
 and it gives modded clans a progress record page of their own. Both mods work together: this
 one has been tested with Custom-Clan-Helper installed, progress record included.
 
+## Soul records
+
+The Soul Savior tab starts with a soul catalog: fifteen soul families per page, localized
+names, highest soul tier won and highest difficulty won. Those are independent records
+from **ExpandedWinTracker by Conductor**, and can come from different victories.
+Clan combination pages follow the soul catalog. The left panel summarizes the current view.
+
 ## Building
 
 See `COMO-COMPILAR.md`. GitHub Actions builds the DLL on every push that touches `src/`.
@@ -345,3 +352,5 @@ El seguimiento Soul Savior utiliza **ExpandedWinTracker by Conductor**: registra
 <!-- 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Explicar dependencia obligatoria ExpandedWinTracker, instalación automática y atribución Brandon/Conductor en español e inglés -->
 
 <!-- 2026-09-30-2242||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||README público 0.4.5: resumen lateral, idiomas y dependencia; retirar notas internas de pruebas e instalación -->
+
+<!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Explicar catálogo de almas, navegación y máximos independientes -->

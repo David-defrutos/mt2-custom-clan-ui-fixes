@@ -18,15 +18,31 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     }
 
     [DataContract]
+    public sealed class SoulSaviorSoulRecord
+    {
+        [DataMember(Name = "name")] public string? Name;
+        [DataMember(Name = "tier")] public int? Tier;
+        [DataMember(Name = "highestGameLevel")] public int? HighestGameLevel;
+    }
+
+    [DataContract]
     public sealed class SoulSaviorSave
     {
         [DataMember(Name = "soulSaviorClassWins")] public List<SoulSaviorRecord>? Wins;
+        [DataMember(Name = "soulWins")] public List<SoulSaviorSoulRecord>? Souls;
     }
 
     public sealed class SoulSaviorRecords
     {
         readonly Dictionary<(string, string, int), int> wins = new();
         public int Count => wins.Count;
+        readonly Dictionary<string, (int Tier, int Difficulty)> souls = new(StringComparer.Ordinal);
+        public int SoulCount => souls.Count;
+        // ExpandedWinTracker removes the final two characters of SoulData.name.
+        public static string SoulKey(string assetName)
+            => assetName.Length > 2 ? assetName.Substring(0, assetName.Length - 2) : assetName;
+        public (int Tier, int Difficulty) Soul(string name)
+            => souls.TryGetValue(name, out var record) ? record : (-1, -1);
 
         public static SoulSaviorRecords Read(Stream input)
         {
@@ -45,6 +61,18 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (!result.wins.TryGetValue(key, out int old) || old < win.HighestGameLevel.Value)
                     result.wins[key] = win.HighestGameLevel.Value;
             }
+            // Older saves without soulWins still have valid clan records.
+            if (save.Souls != null)
+                foreach (var soul in save.Souls)
+                {
+                    if (soul == null || string.IsNullOrWhiteSpace(soul.Name)
+                        || !soul.Tier.HasValue || !soul.HighestGameLevel.HasValue
+                        || soul.Tier.Value < 0 || soul.HighestGameLevel.Value < 0) continue;
+                    var old = result.Soul(soul.Name!);
+                    // These maxima are independent in the tracker, not a paired achievement.
+                    result.souls[soul.Name!] = (Math.Max(old.Tier, soul.Tier.Value),
+                        Math.Max(old.Difficulty, soul.HighestGameLevel.Value));
+                }
             return result;
         }
 
@@ -89,3 +117,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Integracion Soul Savior 0.4.0 completada; consultas validadas y presentacion separada de victorias normales
 
 // 2026-09-30-2241||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Resumen por IDs distintos: parejas direccionales, sin duplicar campeones ni clanes y con ausencia distinta de victoria S0
+
+// 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Leer soulWins con máximos independientes, duplicados, ausencia y claves compatibles con ExpandedWinTracker
