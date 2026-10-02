@@ -67,6 +67,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 { direct = checked(direct + item.Value.Direct); automatic = checked(automatic + item.Value.Automatic); }
             return (direct, automatic);
         }
+        public List<CardUsageEntry> Snapshot() => counts.Select(c => new CardUsageEntry {
+            CardId = c.Key.Card, Mode = c.Key.Mode, Direct = c.Value.Direct, Automatic = c.Value.Automatic
+        }).ToList();
         public void Record(string card, string mode, bool direct)
         {
             if (string.IsNullOrWhiteSpace(card) || string.IsNullOrWhiteSpace(mode))
@@ -108,3 +111,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 }
 
 // 2026-10-02-0039||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\CardUsageStore.cs||Mejora 4: recuentos por carta y modo, persistencia propia atómica, copia anterior y protección frente a corrupción/cambios externos
+
+// 2026-10-02-0854||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\CardUsageStore.cs||Exponer copia de recuentos para ranking sin permitir mutaciones de datos internos

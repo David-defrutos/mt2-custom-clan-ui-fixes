@@ -187,6 +187,17 @@ tooltip. These counts are stored by CustomClanUIFixes in
 They are separate from ExpandedWinTracker’s Soul Savior victory records. Game saves and
 ExpandedWinTracker records are left untouched.
 
+## Next release: Progress explorer
+
+Open **Logbook → Soul Savior → Progress**, then choose Cards, Clans or Souls.
+
+- **Cards:** most-played ranking, search, clan filter (including clanless), and All / Normal / Soul Savior / Other modes. Counts distinguish direct and automatic plays and show the tracking start date.
+- **Clans:** search by localized name; order by name, most progress or most pending. Choose Any champion, Champion 1 or Champion 2. Select a clan to see its pending allies; All clans returns to the list without losing the chosen champion.
+- **Souls:** show all, without a win or below the chosen difficulty goal, with a name search.
+- **Goals:** select Goal to cycle the required difficulty. Combination and soul totals stay complete while searching; the percentage and bar describe the current view. S0 is a recorded win, while — means no recorded win. Soul tier and difficulty remain independent records.
+
+The tables use the native page arrows as well as their Previous / Next controls. On narrow layouts the outer arrows browse Souls, Clans and Progress; Progress keeps its own table controls. Tracking starts when this feature is installed and cannot reconstruct earlier card plays. Soul Savior records come from **ExpandedWinTracker by Conductor (Brandon)**.
+
 ## Building
 
 See `COMO-COMPILAR.md`. GitHub Actions builds the DLL on every push that touches `src/`.
@@ -333,6 +344,17 @@ tambien trabaja sobre el logbook: tiene las paginas de mejoras y de artefactos e
 y da a los clanes modeados una hoja de progreso propia. Los dos mods funcionan juntos: este se
 ha probado con Custom-Clan-Helper instalado, hoja de progreso incluida.
 
+## Próxima versión: explorador de Progreso
+
+Abre **Logbook → Soul Savior → Progreso** y elige Cartas, Clanes o Almas.
+
+- **Cartas:** ranking de las más jugadas, búsqueda y filtros por clan (incluido Sin clan) y modo. Se separan usos directos y automáticos y se indica desde cuándo se cuentan.
+- **Clanes:** busca por el nombre del idioma del juego y ordena por nombre, progreso o pendientes. Elige Cualquier campeón, Campeón 1 o Campeón 2. Selecciona un clan para ver sus aliados pendientes; Todos los clanes vuelve a la lista conservando el campeón elegido.
+- **Almas:** todas, sin victoria o por debajo del objetivo, con búsqueda por nombre.
+- **Objetivos:** pulsa Objetivo para cambiar la dificultad requerida. Los totales de combinaciones y almas no se reducen al buscar. El porcentaje y la barra corresponden a la vista actual. S0 cuenta como victoria; — indica ausencia. Nivel del alma y dificultad siguen siendo récords independientes.
+
+Las tablas admiten las flechas nativas y sus botones Anterior / Siguiente. En ventanas estrechas las flechas exteriores recorren Almas, Clanes y Progreso; la tabla conserva sus controles propios. El recuento de cartas empieza al instalar el seguimiento, sin reconstruir usos anteriores. Los datos Soul Savior proceden de **ExpandedWinTracker by Conductor (Brandon)**.
+
 ## Compilar
 
 Ver `COMO-COMPILAR.md`. El DLL lo compila GitHub Actions con cada push que toque `src/`.
@@ -378,3 +400,5 @@ El seguimiento Soul Savior utiliza **ExpandedWinTracker by Conductor**: registra
 <!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Explicar catálogo de almas, navegación y máximos independientes -->
 
 <!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentación pública de panel, filtro, navegación y contador propio: origen, exclusiones, intentos y ubicación/configuración -->
+
+<!-- 2026-10-02-0931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar acceso, filtros, campeones, objetivos y navegación del explorador de próxima versión en ambos idiomas -->

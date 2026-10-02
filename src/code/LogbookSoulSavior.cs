@@ -25,7 +25,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPostfix, HarmonyPriority(Priority.Last)]
         static void AddPages(CompendiumSectionChecklist __instance)
         {
-            if (!Enabled || !File.Exists(SavePath)) return;
+            if (!Enabled) return;
             var pages = __instance.ChecklistPages;
             var target = __instance.GetComponentInParent<CompendiumScreen>()?.GetComponentInChildren<SoulSaviorSection>(true);
             if (target == null || target.Pages.Count != 0) return;
@@ -84,6 +84,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     view.Build(save, template, (RectTransform)layout.transform,
                         classes.Skip(page * perPage).Take(perPage).ToList(), page + 1, count);
                 }
+                var explorerObject = new GameObject("Progress explorer", typeof(RectTransform));
+                explorerObject.SetActive(false);
+                explorerObject.transform.SetParent(target.transform, false);
+                CopyRect((RectTransform)source.transform, (RectTransform)explorerObject.transform);
+                var explorer = explorerObject.AddComponent<ProgressExplorerPage>();
+                added.Add(explorer);
+                explorer.Build(save, (RectTransform)layout.transform,
+                    Field<TMP_Text>(template, "clanNameLabel")!, classes, soulCatalog);
                 // Añadir solo cuando todas las paginas estan preparadas.
                 foreach (var view in added) target.Pages.Add(view);
                 target.BuildSidebar(classes, labelTemplate: LogbookSoulSavior.Field<TMP_Text>(template, "clanNameLabel")!);
@@ -392,6 +400,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         GridLayoutGroup? layout;
         TMP_Text? heading;
         TMP_Text? note;
+        float measuredSoulWidth = -1f;
 
         internal void Build(RectTransform sourceLayout, TMP_Text template, List<SoulData> souls)
         {
@@ -411,6 +420,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 0f, 48f, 1400f, 42f, 30f);
             note = SoulSaviorChecklistPage.Label(template, grid, "Soul catalog note",
                 0f, -755f, 1400f, 62f, 20f);
+            LogbookProgressTheme.Ink(heading, true);
+            LogbookProgressTheme.Ink(note);
             foreach (var soul in souls)
             {
                 var row = new GameObject("Soul " + soul.name, typeof(RectTransform), typeof(Image));
@@ -442,6 +453,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 record.enableAutoSizing = true;
                 record.fontSizeMin = 14f;
                 record.fontSizeMax = 20f;
+                LogbookProgressTheme.Button(button, name, true);
+                name.alignment = TextAlignmentOptions.MidlineLeft;
+                LogbookProgressTheme.Ink(name, true);
+                LogbookProgressTheme.Ink(record);
+                LogbookProgressTheme.Status(button.transform, false);
                 items.Add((soul, icon, name, record, button, tooltip));
             }
             Resize();
@@ -450,7 +466,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         void Resize()
         {
             if (grid == null || layout == null) return;
-            float width = Mathf.Max(280f, (grid.rect.width - 32f) / 3f);
+            if (Math.Abs(grid.rect.width - measuredSoulWidth) < 0.5f) return;
+            measuredSoulWidth = grid.rect.width;
+            float width = Mathf.Max(120f, (grid.rect.width - 32f) / 3f);
             layout.cellSize = new Vector2(width, 136f);
             foreach (var item in items)
             {
@@ -481,6 +499,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                         : SoulSaviorText.Get(14, win.Tier, "S" + win.Difficulty);
                     item.Tooltip.SetTooltipLocalized(item.Soul.GetName(), item.Soul.GetDescription()
                         + "\n\n" + item.Record.text, TooltipDesigner.TooltipDesignType.DefaultWide);
+                    LogbookProgressTheme.Status(item.Button.transform, win.Difficulty >= 0);
                     item.Icon.color = win.Difficulty < 0 ? new Color(0.55f, 0.55f, 0.55f, 0.75f) : Color.white;
                 }
             }
@@ -492,6 +511,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     item.Name.text = item.Soul.GetName();
                     item.Record.text = "—";
                     item.Icon.color = Color.gray;
+                    LogbookProgressTheme.Status(item.Button.transform, false);
+                    item.Tooltip.SetTooltipLocalized(item.Soul.GetName(), SoulSaviorText.Get(2),
+                        TooltipDesigner.TooltipDesignType.DefaultWide);
                 }
                 if (note != null) note.text = SoulSaviorText.Get(2);
                 Plugin.Logger.LogWarning("[SoulSavior] Almas no disponibles: " + e.Message);
@@ -511,6 +533,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         internal int PendingPageCount = 1;
         RectTransform? sidebar;
         TMP_Text? sidebarBody;
+        RectTransform? sidebarDetail;
+        float measuredSidebarWidth = -1f, measuredSidebarHeight = -1f;
         TMP_Text? sidebarLegend;
         TMP_Text? sidebarCredit;
         GameUISelectableButton? nextPending;
@@ -520,7 +544,61 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         TMP_Text? nextPendingLabel;
         TMP_Text? fontReference;
         string sidebarLanguage = "";
-        protected override int PageCount => Pages.Count;
+        readonly ProgressNavigator navigator = new();
+        SoulSaviorViewState viewState => navigator.Legacy;
+        bool compactNavigation => navigator.Compact;
+        bool explorerView => navigator.ExplorerView;
+        GameUISelectableButton? soulsViewButton, clansViewButton, explorerViewButton;
+        TMP_Text? soulsViewLabel, clansViewLabel, explorerViewLabel;
+        List<ChecklistPage> CurrentPages => compactNavigation ? Pages : explorerView
+            ? Pages.Where(p => p is ProgressExplorerPage).ToList()
+            : Pages.Where(p => !(p is ProgressExplorerPage) && (p is SoulSaviorSoulsPage) == viewState.ViewingSouls).ToList();
+        ProgressExplorerPage? Explorer => Pages.OfType<ProgressExplorerPage>().FirstOrDefault();
+        protected override int PageCount => navigator.NativePageCount(Explorer?.ResultPageCount ?? 1);
+        internal void RefreshExplorerPagination()
+        {
+            if (!explorerView || compactNavigation) return;
+            currentPageIndex = navigator.NativePageIndex(Explorer?.ResultPage ?? 0);
+            base.RefreshPage();
+            PageCountChangedSignal.Dispatch();
+        }
+        public override void TurnPage(int direction)
+        {
+            if (explorerView && !compactNavigation) { Explorer?.AdvancePage(direction); return; }
+            base.TurnPage(direction);
+        }
+        void UpdateViewCounts() => navigator.UpdateCounts(Pages.Count(p => p is SoulSaviorSoulsPage),
+            Pages.Count(p => p is SoulSaviorChecklistPage), Pages.Any(p => p is ProgressExplorerPage));
+        protected override int GetInitialPage()
+        {
+            UpdateViewCounts();
+            return navigator.InitialPage;
+        }
+        void SwitchView(bool souls)
+        {
+            UpdateViewCounts();
+            currentPageIndex = navigator.SwitchLegacy(souls, currentPageIndex);
+            RefreshPage();
+            PageCountChangedSignal.Dispatch();
+        }
+        void SwitchExplorer()
+        {
+            currentPageIndex = navigator.SwitchExplorer(currentPageIndex);
+            RefreshPage();
+            PageCountChangedSignal.Dispatch();
+        }
+        public override bool ApplyScreenInput(CoreInputControlMapping mapping, IGameUIComponent? target, InputManager.Controls control)
+        {
+            var explorer = GetComponentInChildren<ProgressExplorerPage>();
+            if (explorer != null && explorer.ApplyInput(mapping, target, control)) return true;
+            foreach (var dispatch in GetComponentsInChildren<ProgressButtonAction>())
+            {
+                var button = dispatch.GetComponent<GameUISelectableButton>();
+                if (button != null && button.TryTrigger(mapping, target!, control))
+                { dispatch.Activate(); return true; }
+            }
+            return base.ApplyScreenInput(mapping, target, control);
+        }
         protected override void InitializeImpl() { }
         internal void Configure(CompendiumSectionChecklist source)
         {
@@ -534,21 +612,32 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
         protected override void RefreshPage()
         {
+            UpdateViewCounts();
+            var visible = CurrentPages;
+            currentPageIndex = Mathf.Clamp(currentPageIndex, 0, Math.Max(0, visible.Count - 1));
+            var selectedPage = visible.Count == 0 ? null : visible[currentPageIndex];
+            navigator.Remember(currentPageIndex);
             base.RefreshPage();
-            for (int i = 0; i < Pages.Count; i++) Pages[i].Toggle(i == currentPageIndex);
+            foreach (var page in Pages) page.Toggle(page == selectedPage);
             mainNavLayer.SetDefaultGameSelectable(GetDefaultGameUISelectable());
             if (fontReference != null)
                 foreach (var text in GetComponentsInChildren<TMP_Text>(true))
                 {
-                    text.font = fontReference.font;
-                    text.fontSharedMaterial = fontReference.fontSharedMaterial;
+                    var ink = text.GetComponent<LogbookInkLabel>();
+                    bool changed = text.font != fontReference.font;
+                    if (changed) text.font = fontReference.font;
+                    if (ink == null || changed) text.fontSharedMaterial = fontReference.fontSharedMaterial;
+                    if (ink != null && changed) LogbookProgressTheme.Ink(text, ink.Heading);
                 }
             RefreshSidebar();
             RefreshTabTooltip();
         }
         public override IGameUIComponent? GetDefaultGameUISelectable()
-            => Pages.Count == 0 ? null : Pages[Mathf.Clamp(currentPageIndex, 0, Pages.Count - 1)]
+        {
+            var visible = CurrentPages;
+            return visible.Count == 0 ? null : visible[Mathf.Clamp(currentPageIndex, 0, visible.Count - 1)]
                 .GetDefaultGameUISelectable();
+        }
         internal void SetIcon(SaveManager manager)
         {
             if (Tab == null) return;
@@ -588,6 +677,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
         internal void BuildSidebar(List<ClassData> clans, TMP_Text labelTemplate)
         {
+            UpdateViewCounts();
             sidebarClasses.AddRange(clans);
             fontReference = labelTemplate;
             var obj = new GameObject("Soul Savior overview", typeof(RectTransform));
@@ -596,13 +686,34 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             sidebar.anchorMin = sidebar.anchorMax = new Vector2(0.5f, 0.5f);
             sidebar.pivot = new Vector2(0f, 1f);
             sidebar.sizeDelta = new Vector2(340f, 720f);
-            SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
-                "Soul Savior overview title", 0f, 0f, 340f, 64f, 36f).text = "Soul Savior";
+            var title = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
+                "Soul Savior overview title", 0f, 0f, 340f, 44f, 32f);
+            title.text = "Soul Savior"; title.alignment = TextAlignmentOptions.Center;
+            LogbookProgressTheme.Ink(title, true);
+            LogbookProgressTheme.Divider(sidebar, -43f);
+            var detail = new GameObject("Soul Savior detail frame", typeof(RectTransform), typeof(Image));
+            detail.transform.SetParent(sidebar, false);
+            sidebarDetail = (RectTransform)detail.transform;
+            sidebarDetail.anchorMin = new Vector2(0f,1f); sidebarDetail.anchorMax = Vector2.one;
+            sidebarDetail.pivot = new Vector2(0.5f,1f); sidebarDetail.anchoredPosition = new Vector2(0f,-98f);
+            sidebarDetail.sizeDelta = new Vector2(0f,440f);
+            detail.GetComponent<Image>().color = new Color(0.66f,0.48f,0.25f,0.10f);
+            detail.GetComponent<Image>().raycastTarget = false;
+            LogbookProgressTheme.Frame(detail.transform);
+            soulsViewButton = SidebarButton(labelTemplate, "Souls view", -50f,
+                () => SwitchView(true), out soulsViewLabel);
+            clansViewButton = SidebarButton(labelTemplate, "Clans view", -50f,
+                () => SwitchView(false), out clansViewLabel);
+            explorerViewButton = SidebarButton(labelTemplate, "Progress view", -50f, SwitchExplorer, out explorerViewLabel);
+            LayoutViewButton(soulsViewButton, soulsViewLabel, 0f, 108f);
+            LayoutViewButton(clansViewButton, clansViewLabel, 116f, 108f);
+            LayoutViewButton(explorerViewButton, explorerViewLabel, 232f, 108f);
             sidebarBody = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
-                "Soul Savior overview totals", 0f, -90f, 340f, 440f, 24f);
+                "Soul Savior overview totals", 14f, -110f, 312f, 416f, 22f);
+            LogbookProgressTheme.Ink(sidebarBody);
             sidebarBody.enableAutoSizing = true;
             sidebarBody.fontSizeMin = 14f;
-            sidebarBody.fontSizeMax = 24f;
+            sidebarBody.fontSizeMax = 22f;
             sidebarBody.gameObject.AddComponent<GameUISelectable>();
             sidebarBody.gameObject.AddComponent<TooltipProviderComponent>();
             sidebarBody.raycastTarget = true;
@@ -619,7 +730,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             sidebarLegend = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
                 "Soul Savior overview legend", 0f, -460f, 340f, 170f, 20f);
             sidebarCredit = SoulSaviorChecklistPage.Label(labelTemplate, sidebar,
-                "Soul Savior overview credit", 0f, -665f, 340f, 80f, 18f);
+                "Soul Savior overview credit", 0f, -665f, 340f, 80f, 16f);
+            LogbookProgressTheme.Ink(sidebarLegend);
+            LogbookProgressTheme.Ink(sidebarCredit);
+            LogbookProgressTheme.Divider(sidebarCredit.transform, 10f);
         }
 
         GameUISelectableButton SidebarButton(TMP_Text template, string name, float y,
@@ -635,11 +749,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             button.targetGraphic = obj.GetComponent<Image>();
             button.targetGraphic.color = new Color(0.45f, 0.33f, 0.18f, 0.35f);
             button.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
-            button.onClick.AddListener(action);
+            var dispatch = obj.AddComponent<ProgressButtonAction>();
+            dispatch.Action = () => action();
             caption = SoulSaviorChecklistPage.Label(template, rect, name + " text", 8f, -5f, 324f, 34f, 22f);
             caption.enableAutoSizing = true;
             caption.fontSizeMin = 16f;
             caption.fontSizeMax = 22f;
+            LogbookProgressTheme.Button(button, caption);
             return button;
         }
 
@@ -659,17 +775,41 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         void RefreshSidebar()
         {
             sidebarLanguage = I2.Loc.LocalizationManager.CurrentLanguageCode;
+            measuredSidebarWidth = -1f; // Reflow when buttons become visible or their captions change.
             if (sidebarBody == null) return;
+            if (soulsViewLabel != null) soulsViewLabel.text = SoulSaviorText.Get(13);
+            if (clansViewLabel != null) clansViewLabel.text = SoulSaviorText.Extra("Clans");
+            if (soulsViewButton != null) soulsViewButton.interactable = viewState.SoulPages > 0;
+            if (clansViewButton != null) clansViewButton.interactable = viewState.ClanPages > 0;
             if (sidebarLegend != null) sidebarLegend.text = SoulSaviorText.Get(
-                Pages.Count > currentPageIndex && Pages[currentPageIndex] is SoulSaviorSoulsPage ? 15 : 11);
+                viewState.ViewingSouls ? 15 : 11);
             if (sidebarCredit != null) sidebarCredit.text = SoulSaviorText.Get(12);
+            if (explorerViewLabel != null) explorerViewLabel.text = ProgressText.Get("Progress");
+            LogbookProgressTheme.Select(soulsViewButton, !explorerView && viewState.ViewingSouls);
+            LogbookProgressTheme.Select(clansViewButton, !explorerView && !viewState.ViewingSouls);
+            LogbookProgressTheme.Select(explorerViewButton, explorerView);
+            LogbookProgressTheme.Select(pendingFilter, ShowPendingOnly);
+            if (explorerView)
+            {
+                if (pendingFilter != null) pendingFilter.gameObject.SetActive(false);
+                if (nextPending != null) nextPending.gameObject.SetActive(false);
+                sidebarBody.text = ProgressText.Get("Progress") + "\n\n" + ProgressText.Get("Cards") + "\n"
+                    + (CardUsageTracker.Store?.Snapshot().Select(e => e.CardId).Distinct().Count().ToString() ?? "—")
+                    + "\n\n" + SoulSaviorText.Extra("Clans") + "\n" + sidebarClasses.Count
+                    + "\n\n" + SoulSaviorText.Get(13) + "\n" + SoulCatalog.Count;
+                if (sidebarLegend != null) sidebarLegend.text = SoulSaviorText.Extra("UsageNote");
+                sidebarBody.GetComponent<TooltipProviderComponent>()?.SetTooltipLocalized(ProgressText.Get("Progress"),
+                    sidebarBody.text, TooltipDesigner.TooltipDesignType.DefaultWide);
+                return;
+            }
+
             try
             {
                 using var input = File.Open(LogbookSoulSavior.SavePath,
                     FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 var records = SoulSaviorRecords.Read(input);
                 var (won, possible, clansWon, clanCount, best) = records.Overview(sidebarClasses.Select(c => c.GetID()));
-                bool soulView = Pages.Count > currentPageIndex && Pages[currentPageIndex] is SoulSaviorSoulsPage;
+                bool soulView = viewState.ViewingSouls;
                 if (pendingFilter != null) pendingFilter.gameObject.SetActive(!soulView);
                 if (pendingFilterLabel != null) pendingFilterLabel.text = SoulSaviorText.Extra(ShowPendingOnly ? "Missing" : "All");
                 if (soulView && nextPending != null) nextPending.gameObject.SetActive(false);
@@ -687,7 +827,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     PendingPageCount = Math.Max(1, (pending.Count + 7) / 8);
                     PendingPage = Mathf.Clamp(PendingPage, 0, PendingPageCount - 1);
                     var body = new System.Text.StringBuilder();
-                    body.Append("<size=30>").Append(SelectedClan.GetTitle()).Append("</size>\n")
+                    body.Append("<color=#611C13><size=28>").Append(SelectedClan.GetTitle()).Append("</size></color>\n")
                         .Append(allies.Count - pending.Count).Append(" / ").Append(allies.Count).Append("\n\n");
                     for (int champion = 0; champion < 2; champion++)
                     {
@@ -714,6 +854,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             catch (Exception e)
             {
                 sidebarBody.text = SoulSaviorText.Get(2);
+                if (nextPending != null) nextPending.gameObject.SetActive(false);
                 sidebarBody.GetComponent<TooltipProviderComponent>()?.SetTooltipLocalized("Soul Savior",
                     sidebarBody.text, TooltipDesigner.TooltipDesignType.DefaultWide);
                 Plugin.Logger.LogWarning("[SoulSavior] Resumen no disponible: " + e.Message);
@@ -735,41 +876,71 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             ((RectTransform)activeGrid.transform).GetWorldCorners(corners);
             float listLeft = root.InverseTransformPoint(corners[0]).x;
             float available = listLeft - root.rect.xMin - 48f;
-            sidebar.gameObject.SetActive(available >= 220f);
-            if (available < 220f) return;
+            bool compact = available < 220f || root.rect.height < 680f;
+            if (compactNavigation != compact)
+            {
+                currentPageIndex = navigator.Resize(compact, currentPageIndex);
+                RefreshPage();
+                PageCountChangedSignal.Dispatch();
+            }
+            sidebar.gameObject.SetActive(!compact);
+            if (compact) return;
             float width = Mathf.Min(360f, available);
-            sidebar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             sidebar.position = root.TransformPoint(new Vector3(root.rect.xMin + 24f,
                 root.rect.yMax - 150f, 0f));
             float bodyHeight = Mathf.Clamp(root.rect.height - 560f, 140f, 500f);
-            if (sidebarBody != null) sidebarBody.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bodyHeight);
+            if (Math.Abs(width - measuredSidebarWidth) < 0.5f && Math.Abs(bodyHeight - measuredSidebarHeight) < 0.5f) return;
+            measuredSidebarWidth = width; measuredSidebarHeight = bodyHeight;
+            sidebar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            float actionY = -110f - bodyHeight;
+            if (sidebarDetail != null) sidebarDetail.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bodyHeight);
+            if (sidebarBody != null) sidebarBody.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bodyHeight - 24f);
             if (nextPending != null)
             {
                 var rect = (RectTransform)nextPending.transform;
-                rect.anchoredPosition = new Vector2(0f, -100f - bodyHeight);
+                rect.anchoredPosition = new Vector2(0f, actionY);
                 rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+                if (nextPending.gameObject.activeSelf) actionY -= 50f;
             }
             if (pendingFilter != null)
             {
                 var rect = (RectTransform)pendingFilter.transform;
-                rect.anchoredPosition = new Vector2(0f, -150f - bodyHeight);
+                rect.anchoredPosition = new Vector2(0f, actionY);
                 rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+                if (pendingFilter.gameObject.activeSelf) actionY -= 50f;
             }
             if (pendingFilterLabel != null) pendingFilterLabel.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 16f);
             if (nextPendingLabel != null) nextPendingLabel.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 16f);
             if (sidebarLegend != null)
             {
-                sidebarLegend.rectTransform.anchoredPosition = new Vector2(0f, -205f - bodyHeight);
-                sidebarLegend.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 115f);
+                sidebarLegend.rectTransform.anchoredPosition = new Vector2(0f, actionY);
+                sidebarLegend.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 100f);
                 sidebarLegend.enableAutoSizing = true;
                 sidebarLegend.fontSizeMin = 14f;
                 sidebarLegend.fontSizeMax = 20f;
             }
             if (sidebarCredit != null)
-                sidebarCredit.rectTransform.anchoredPosition = new Vector2(0f, -325f - bodyHeight);
+            {
+                sidebarCredit.rectTransform.anchoredPosition = new Vector2(0f, actionY - 114f);
+                sidebarCredit.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 50f);
+            }
             foreach (var text in sidebar.GetComponentsInChildren<TMP_Text>())
                 text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
-                    text.GetComponentInParent<GameUISelectableButton>() != null ? width - 16f : width);
+                    text.GetComponentInParent<GameUISelectableButton>() != null ? width - 16f : text == sidebarBody ? width - 28f : width);
+            float viewWidth = (width - 16f) / 3f;
+            LayoutViewButton(soulsViewButton, soulsViewLabel, 0f, viewWidth);
+            LayoutViewButton(clansViewButton, clansViewLabel, viewWidth + 8f, viewWidth);
+            LayoutViewButton(explorerViewButton, explorerViewLabel, 2f * (viewWidth + 8f), viewWidth);
+        }
+        static void LayoutViewButton(GameUISelectableButton? button, TMP_Text? label, float x, float width)
+        {
+            if (button == null || label == null) return;
+            var rect = (RectTransform)button.transform;
+            rect.anchoredPosition = new Vector2(x, -56f);
+            rect.sizeDelta = new Vector2(width, 36f);
+            label.rectTransform.sizeDelta = new Vector2(width - 16f, 26f);
+            label.fontSizeMax = 20f;
+            label.fontSizeMin = 12f;
         }
     }
 
@@ -780,7 +951,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         [HarmonyPostfix]
         static void Register(CompendiumScreen __instance)
         {
-            if (!LogbookSoulSavior.Enabled || !File.Exists(LogbookSoulSavior.SavePath)) return;
+            if (!LogbookSoulSavior.Enabled) return;
             var sections = LogbookSoulSavior.Field<Dictionary<CompendiumScreen.Section, CompendiumSection>>(
                 __instance, "pagesBySection");
             var tabs = LogbookSoulSavior.Field<Dictionary<CompendiumScreen.Section, CompendiumTab>>(
@@ -923,6 +1094,82 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
     }
+
+    // Decorative graphics never receive input; the native dispatcher owns every button.
+    public sealed class LogbookInkLabel : MonoBehaviour
+    { internal bool Heading; }
+
+    internal static class LogbookProgressTheme
+    {
+        static readonly Color InkColor = new Color(0.23f, 0.13f, 0.07f, 1f);
+        internal static void Ink(TMP_Text text, bool heading = false)
+        {
+            var marker = text.GetComponent<LogbookInkLabel>() ?? text.gameObject.AddComponent<LogbookInkLabel>();
+            marker.Heading = heading;
+            text.color = heading ? new Color(0.38f, 0.09f, 0.07f, 1f) : InkColor;
+            text.outlineWidth = 0f;
+            text.lineSpacing = 3f;
+        }
+        static Image Graphic(Transform parent, string name, Color color, Vector2 min, Vector2 max,
+            Vector2 offsetMin, Vector2 offsetMax)
+        {
+            var obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            obj.transform.SetParent(parent, false);
+            obj.GetComponent<LayoutElement>().ignoreLayout = true;
+            var image = obj.GetComponent<Image>(); image.color = color; image.raycastTarget = false;
+            var rect = image.rectTransform; rect.anchorMin = min; rect.anchorMax = max;
+            rect.offsetMin = offsetMin; rect.offsetMax = offsetMax;
+            return image;
+        }
+        internal static void Frame(Transform parent)
+        {
+            var edge = new Color(0.48f, 0.34f, 0.18f, 0.9f);
+            Graphic(parent, "Book frame top", edge, new Vector2(0, 1), Vector2.one, new Vector2(2,-2), new Vector2(-2,0));
+            Graphic(parent, "Book frame bottom", edge, Vector2.zero, new Vector2(1,0), new Vector2(2,0), new Vector2(-2,2));
+            Graphic(parent, "Book frame left", edge, Vector2.zero, new Vector2(0,1), Vector2.zero, new Vector2(2,0));
+            Graphic(parent, "Book frame right", edge, new Vector2(1,0), Vector2.one, new Vector2(-2,0), Vector2.zero);
+            Graphic(parent, "Book frame glint", new Color(0.94f,0.82f,0.55f,0.5f), new Vector2(0,1), Vector2.one, new Vector2(3,-3), new Vector2(-3,-2));
+        }
+        internal static void Button(GameUISelectableButton button, TMP_Text caption, bool row = false)
+        {
+            Frame(button.transform);
+            caption.alignment = row ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.Center;
+            if (row) Ink(caption);
+            else { caption.color = new Color(1f,0.94f,0.79f,1f); caption.fontSizeMax = 22f; }
+            Select(button, false, row);
+        }
+        internal static void Select(GameUISelectableButton? button, bool selected, bool row = false)
+        {
+            if (button == null) return;
+            var normal = row ? new Color(0.76f,0.63f,0.40f,0.22f)
+                : selected ? new Color(0.57f,0.32f,0.09f,0.96f) : new Color(0.34f,0.17f,0.11f,0.94f);
+            button.targetGraphic.color = Color.white;
+            var colors = button.colors;
+            colors.normalColor = normal; colors.highlightedColor = new Color(0.67f,0.47f,0.20f,1f);
+            colors.selectedColor = colors.highlightedColor; colors.pressedColor = new Color(0.40f,0.23f,0.10f,1f);
+            colors.disabledColor = new Color(0.48f,0.41f,0.31f,0.4f); colors.fadeDuration = 0.12f;
+            button.transition = Selectable.Transition.ColorTint; button.colors = colors;
+        }
+        internal static void Status(Transform parent, bool complete)
+        {
+            var existing = parent.Find("Progress status");
+            var image = existing == null ? Graphic(parent, "Progress status", Color.white,
+                Vector2.zero, new Vector2(0,1), new Vector2(3,4), new Vector2(7,-4)) : existing.GetComponent<Image>();
+            image.color = complete ? new Color(0.68f,0.43f,0.08f,0.95f) : new Color(0.48f,0.34f,0.18f,0.28f);
+        }
+        internal static RectTransform Divider(Transform parent, float y)
+        {
+            // Copy only the native book decoration, never its layout or localisation components.
+            var source = parent.root.GetComponentsInChildren<Image>(true).FirstOrDefault(i => i.sprite != null
+                && i.name.IndexOf("divider", StringComparison.OrdinalIgnoreCase) >= 0);
+            var image = Graphic(parent, "Progress book divider", new Color(0.44f,0.26f,0.12f,0.65f),
+                new Vector2(0,1), Vector2.one, Vector2.zero, Vector2.zero);
+            var rect = image.rectTransform; rect.pivot = new Vector2(0.5f,0.5f);
+            rect.sizeDelta = new Vector2(0,source == null ? 2f : 18f); rect.anchoredPosition = new Vector2(0,y);
+            if (source != null) { image.sprite = source.sprite; image.type = source.type; image.color = source.color; }
+            return rect;
+        }
+    }
 }
 // 2026-09-30-1931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Nueva integracion de lectura de ExpandedWinTracker y paginas Soul Savior por clan
 
@@ -967,3 +1214,27 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-02-0047||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Ajuste compacto: reservar pie según alto, evitar desbordes y ofrecer texto completo del panel en tooltip; conservar margen interior de botones
 
 // 2026-10-02-0047||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Corregir posición de llave del tooltip dentro de try; borrar también contenido de tooltip ante fallo de lectura
+
+// 2026-10-02-0735||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Borrador: accesos Almas/Clanes localizados, paginación independiente, última página por vista y actualización de flechas nativas
+
+// 2026-10-02-0738||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Mantener acceso a almas y clanes por flechas si el panel no cabe; redimensionar sin perder página y ajustar botones desde creación
+
+// 2026-10-02-0903||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Integrar acceso Progreso sin otro icono superior, mantener paginación compacta y despachar botones/buscador con mando
+
+// 2026-10-02-0919||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar estado puro de tres vistas para que Progreso no altere última página de almas/clanes
+
+// 2026-10-02-0923||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar contador y flechas del juego en tablas de Progreso; conservar modo compacto entre vistas
+
+// 2026-10-02-0926||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar fórmulas probadas de contador e índice nativos del explorador
+
+// 2026-10-02-0934||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Activar botones solo por el despacho nativo del juego para evitar duplicación entre onClick Unity e input de ratón/mando
+
+// 2026-10-02-0949||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Pulir panel lateral: tinta sobre pergamino, ficha enmarcada, separadores del libro y botones con selección dorada
+
+// 2026-10-02-0951||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Conservar estilo de tinta al renovar materiales de fuente y cambiar idioma
+
+// 2026-10-02-1045||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Unificar tarjetas de almas con marcos y tinta, señalar victorias, corregir tooltips obsoletos y evitar recrear materiales al navegar
+
+// 2026-10-02-1104||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Compactar acciones ocultas y ayudas de la ficha; actualizar medidas solo cuando cambia geometría o contenido
+
+// 2026-10-02-1106||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar navegación compacta también con altura insuficiente para evitar cortar el panel lateral

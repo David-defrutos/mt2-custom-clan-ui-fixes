@@ -4,6 +4,23 @@
 
 ## Español
 
+### Próxima versión
+
+- Menos huecos en el panel lateral, más espacio para nombres en las tablas y tooltips para títulos y ayudas completos. La navegación compacta también se activa cuando falta altura.
+
+- Filtros activos destacados, ayudas localizadas para recorrer opciones, contador de resultados y mensajes centrados para tablas vacías. Volver del detalle de clan conserva la página y la búsqueda de la lista.
+
+- Tarjetas de almas con el mismo estilo del libro, tablas con filas alternas y valores alineados, marcas de objetivo y buscador enmarcado. Los tooltips de almas se limpian si falla la lectura del tracker.
+
+- Interfaz de Soul Savior y Progreso más integrada con el libro: botones enmarcados, selección dorada, texto en tinta y bloques separados.
+
+- Accesos Almas, Clanes y Progreso dentro de Soul Savior, con memoria de página durante la sesión.
+- Ranking de cartas más jugadas, con búsqueda y filtros por clan y modo; usos directos y automáticos separados.
+- Objetivo de dificultad para combinaciones y almas, con contadores completos, porcentaje y barra de progreso.
+- Filtros de almas: todas, sin victoria y por debajo del objetivo.
+- Pendientes por campeón: seleccionar un clan muestra los aliados que le faltan al campeón elegido.
+- Búsqueda de clanes y orden por nombre, progreso o cantidad de pendientes. Las tablas usan las flechas del juego.
+
 ### 0.4.7
 
 - Panel del clan seleccionado: aliados pendientes y mejor dificultad de cada campeón. Sigue el cursor y la selección con mando.
@@ -57,6 +74,23 @@
 - Opciones de configuración para ajustar o desactivar los cambios de interfaz.
 
 ## English
+
+### Unreleased
+
+- Tighter sidebar spacing, more room for table names and full-text tooltips for headings and help. Compact navigation also handles insufficient height.
+
+- Highlighted active filters, localized option hints, result counts and centered empty states. Returning from clan details restores the list page and search.
+
+- Matching soul cards, alternating table rows, aligned values, goal markers and a framed search field. Soul tooltips clear stale results when tracker records cannot be read.
+
+- Refined Soul Savior and Progress styling with framed buttons, gold selection, ink text and clearer sections matching the logbook.
+
+- Souls, Clans and Progress shortcuts within Soul Savior, with page memory during the session.
+- Most-played card ranking with search, clan and mode filters, and separate direct and automatic counts.
+- Difficulty goals for clan combinations and souls, with complete totals, percentage and a progress bar.
+- Soul filters: all, without a win, or below the selected goal.
+- Champion-specific missing wins: select a clan to inspect the allies still needed by the chosen champion.
+- Clan search and sorting by name, progress or missing wins. Tables support the game's page arrows.
 
 ### 0.4.7
 
@@ -133,3 +167,13 @@
 <!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.6 centrado en seguimiento de almas -->
 
 <!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.7: cuatro mejoras y reglas del contador, sin notas de pruebas internas -->
+
+<!-- 2026-10-02-0931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Notas de próxima versión para jugadores en español primero e inglés; cinco mejoras y accesos directos -->
+
+<!-- 2026-10-02-0952||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar pulido visual en español e inglés en sección próxima versión -->
+
+<!-- 2026-10-02-1046||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir refinamientos de tarjetas, tablas, búsqueda y errores a notas bilingües -->
+
+<!-- 2026-10-02-1052||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir mejoras de claridad de controles y retorno de detalle al changelog bilingüe -->
+
+<!-- 2026-10-02-1107||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Registrar ajuste de espacio y textos largos en changelog bilingüe -->

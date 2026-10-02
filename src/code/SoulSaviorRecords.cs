@@ -6,6 +6,45 @@ using System.Runtime.Serialization.Json;
 
 namespace mt2_custom_clan_ui_fixes.Plugin
 {
+    // Session-only navigation: each view retains its own page, without save writes.
+    internal sealed class SoulSaviorViewState
+    {
+        internal bool ViewingSouls { get; private set; } = true;
+        internal int SoulPages { get; private set; }
+        internal int ClanPages { get; private set; }
+        int soulPage, clanPage;
+        internal int PageCount => ViewingSouls ? SoulPages : ClanPages;
+        internal int InitialPage => ViewingSouls ? soulPage : clanPage;
+        internal int DisplayIndex(bool compact) => InitialPage + (compact && !ViewingSouls ? SoulPages : 0);
+        internal void RememberDisplayed(int index, bool compact)
+        {
+            if (!compact) { Remember(index); return; }
+            index = Clamp(index, SoulPages + ClanPages);
+            ViewingSouls = index < SoulPages || ClanPages == 0;
+            Remember(ViewingSouls ? index : index - SoulPages);
+        }
+        static int Clamp(int page, int count) => Math.Max(0, Math.Min(page, count - 1));
+        internal void UpdateCounts(int souls, int clans)
+        {
+            SoulPages = Math.Max(0, souls);
+            ClanPages = Math.Max(0, clans);
+            soulPage = Clamp(soulPage, SoulPages);
+            clanPage = Clamp(clanPage, ClanPages);
+            if (PageCount == 0 && SoulPages + ClanPages > 0) ViewingSouls = !ViewingSouls;
+        }
+        internal void Remember(int page)
+        {
+            if (ViewingSouls) soulPage = Clamp(page, SoulPages);
+            else clanPage = Clamp(page, ClanPages);
+        }
+        internal int SwitchView(bool souls, int outgoingPage)
+        {
+            Remember(outgoingPage);
+            if ((souls ? SoulPages : ClanPages) > 0) ViewingSouls = souls;
+            return InitialPage;
+        }
+    }
+
     // Contrato de lectura compatible con extraMetagameSave.json de ExpandedWinTracker.
     // No escribe ni modifica el guardado del tracker o del juego.
     [DataContract]
@@ -35,6 +74,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     public sealed class SoulSaviorRecords
     {
         readonly Dictionary<(string, string, int), int> wins = new();
+        readonly Dictionary<(string Main, string Ally), int> pairBest = new();
         public int Count => wins.Count;
         readonly Dictionary<string, (int Tier, int Difficulty)> souls = new(StringComparer.Ordinal);
         public int SoulCount => souls.Count;
@@ -73,6 +113,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                     result.souls[soul.Name!] = (Math.Max(old.Tier, soul.Tier.Value),
                         Math.Max(old.Difficulty, soul.HighestGameLevel.Value));
                 }
+            foreach (var win in result.wins)
+            {
+                var pair = (win.Key.Item1, win.Key.Item2);
+                if (!result.pairBest.TryGetValue(pair, out int old) || win.Value > old)
+                    result.pairBest[pair] = win.Value;
+            }
             return result;
         }
 
@@ -111,13 +157,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
 
         public int Best(string main, string ally)
-        {
-            int best = -1;
-            foreach (var win in wins)
-                if (win.Key.Item1 == main && win.Key.Item2 == ally)
-                    best = Math.Max(best, win.Value);
-            return best;
-        }
+            => pairBest.TryGetValue((main, ally), out int best) ? best : -1;
     }
 }
 // 2026-09-30-1931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Nueva integracion de lectura de ExpandedWinTracker y paginas Soul Savior por clan
@@ -129,3 +169,9 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-01-2324||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Leer soulWins con máximos independientes, duplicados, ausencia y claves compatibles con ExpandedWinTracker
 
 // 2026-10-02-0031||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Mejora 3: máximo por campeón para los aliados instalados sin autoalianzas ni duplicados
+
+// 2026-10-02-0735||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Borrador: estado de navegación con páginas independientes, memoria por vista y límites de catálogos vacíos
+
+// 2026-10-02-0738||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Navegación compacta: convertir índices globales y conservar memoria de cada vista al redimensionar
+
+// 2026-10-02-0914||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\SoulSaviorRecords.cs||Cachear máximo por pareja al leer para evitar recorrer todos los registros al buscar y ordenar progreso
