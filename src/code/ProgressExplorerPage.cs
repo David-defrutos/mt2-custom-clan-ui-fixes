@@ -8,6 +8,7 @@ using ShinyShoe;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace mt2_custom_clan_ui_fixes.Plugin
 {
@@ -24,6 +25,54 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
     }
 
+    // The open list owns navigation and pointer input until selection or cancellation.
+    public sealed class ClanDropdownModal : MonoBehaviour
+    {
+        internal CanvasGroup? Page;
+        internal GameUISelectableDropdown? Selector;
+        bool previousInteractable, previousRaycasts, captured;
+        void OnEnable()
+        {
+            if (Page == null || captured) return;
+            previousInteractable = Page.interactable;
+            previousRaycasts = Page.blocksRaycasts;
+            captured = true;
+            Page.interactable = false;
+            Page.blocksRaycasts = false;
+            transform.SetAsLastSibling();
+        }
+        void OnDisable()
+        {
+            if (!captured || Page == null) return;
+            Page.interactable = previousInteractable;
+            Page.blocksRaycasts = previousRaycasts;
+            captured = false;
+            if (Selector != null && Selector.gameObject.activeInHierarchy)
+                EventSystem.current?.SetSelectedGameObject(Selector.gameObject);
+        }
+        internal static void Link(IReadOnlyList<GameUISelectableButton> entries)
+        {
+            for (int i = 0; i < entries.Count; i++)
+                entries[i].SetNavigation(new Navigation {
+                    mode = Navigation.Mode.Explicit,
+                    selectOnUp = entries[(i + entries.Count - 1) % entries.Count],
+                    selectOnDown = entries[(i + 1) % entries.Count],
+                    selectOnLeft = entries[i], selectOnRight = entries[i]
+                });
+        }
+    }
+
+    public sealed class ClanDropdownFocus : MonoBehaviour, ISelectHandler
+    {
+        public void OnSelect(BaseEventData data)
+        {
+            var scroll = GetComponentInParent<ScrollRect>();
+            if (scroll == null || !scroll.gameObject.activeInHierarchy) return;
+            int count = scroll.content.childCount;
+            if (count > 1) scroll.verticalNormalizedPosition = 1f - (float)transform.GetSiblingIndex() / (count - 1);
+        }
+    }
+
     public sealed class ProgressExplorerPage : ChecklistPage
     {
         const int RowsPerPage = 10;
@@ -31,6 +80,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         RectTransform? panel;
         TMP_Text? template, title, summary, footer, header, valueHeader, searchPlaceholder, emptyState;
         GameUISelectableInputField? search;
+        GameUISelectableDropdown? clanDropdown;
+        GameUISelectableButton? optionBButton;
+        TMP_Text? clanDropdownCaption;
+        RectTransform? clanMenu;
+        ScrollRect? clanScroll;
+        string dropdownLanguage = "";
+        readonly List<int> clanChoiceIndices = new();
         InputFieldContainer? searchContainer;
         Image? bar;
         readonly List<ClassData> clans = new();
@@ -43,6 +99,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         CardUsageStore? usage;
         List<ProgressIdentity>? cardCatalog;
         int view, page, clanListPage, clanFilter, champion = -1, goal, maxGoal = 10;
+        readonly ProgressBrowseMemory browseMemory = new();
         UsageMode mode;
         ProgressFilter soulFilter;
         ProgressSort sort;
@@ -65,7 +122,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             Button("Clans", 0, 1, () => SetView(1), out clansCaption);
             Button("Souls", 0, 2, () => SetView(2), out soulsCaption);
             Button("Option A", 1, 0, ChangeA, out optionA);
-            Button("Option B", 1, 1, ChangeB, out optionB);
+            optionBButton = Button("Option B", 1, 1, ChangeB, out optionB);
+            BuildClanDropdown();
             Button("Option C", 1, 2, () => { if (view == 1 && selectedClan.Length > 0) { selectedClan = ""; query = clanListQuery; search?.SetTextWithoutNotify(query); page = clanListPage; Render(); } else ResetFilters(); }, out optionC);
             goalButton = Button("Goal", 2, 0, () => { goal = (goal + 1) % (maxGoal + 1); ResetPage(); }, out goalCaption);
             BuildSearch();
@@ -94,7 +152,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 value.alignment = TextAlignmentOptions.MidlineRight;
                 LogbookProgressTheme.Status(row.transform, false);
                 value.richText = false; name.richText = false;
-                var tooltip = row.gameObject.AddComponent<TooltipProviderComponent>();
+                var tooltip = LogbookProgressTheme.Tooltip(row.gameObject);
                 rows.Add((row, name, value, tooltip));
                 SetRect((RectTransform)row.transform, 0f, -270f - i * 42f, 1400f, 38f);
             }
@@ -138,6 +196,100 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var button = MakeButton(name, action, out caption);
             controls.Add((button, caption, row, column)); return button;
         }
+        void BuildClanDropdown()
+        {
+            var obj = new GameObject("Clan dropdown", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            obj.SetActive(false); obj.transform.SetParent(panel, false);
+            clanDropdown = obj.AddComponent<GameUISelectableDropdown>();
+            obj.GetComponent<CanvasGroup>().ignoreParentGroups = true;
+            clanDropdown.targetGraphic = obj.GetComponent<Image>();
+            clanDropdown.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
+            clanDropdownCaption = SoulSaviorChecklistPage.Label(template!, obj.transform, "Clan dropdown caption", 8f, -5f, 400f, 28f, 22f);
+            Fit(clanDropdownCaption, 14f, 22f); LogbookProgressTheme.Button(clanDropdown, clanDropdownCaption);
+            var menu = new GameObject("Clan choices", typeof(RectTransform), typeof(Image), typeof(CanvasGroup), typeof(ScrollRect));
+            menu.SetActive(false); menu.transform.SetParent(panel, false);
+            clanMenu = (RectTransform)menu.transform;
+            SetRect(clanMenu, 0f, -44f, 450f, 360f);
+            menu.GetComponent<Image>().color = new Color(0.86f,0.77f,0.59f,1f);
+            // Same Canvas as the page: last sibling renders the opaque list above rows.
+            menu.GetComponent<CanvasGroup>().ignoreParentGroups = true;
+            var modal = menu.AddComponent<ClanDropdownModal>();
+            modal.Page = panel!.GetComponent<CanvasGroup>() ?? panel.gameObject.AddComponent<CanvasGroup>();
+            modal.Selector = clanDropdown;
+            LogbookProgressTheme.Frame(menu.transform);
+            var viewport = new GameObject("Clan viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+            viewport.transform.SetParent(menu.transform, false);
+            var viewportRect = (RectTransform)viewport.transform;
+            viewportRect.anchorMin = Vector2.zero; viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = new Vector2(6f,6f); viewportRect.offsetMax = new Vector2(-6f,-6f);
+            viewport.GetComponent<Image>().color = new Color(1f,1f,1f,0f);
+            var content = new GameObject("Clan choices content", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            content.transform.SetParent(viewport.transform, false);
+            var contentRect = (RectTransform)content.transform;
+            contentRect.anchorMin = new Vector2(0f,1f); contentRect.anchorMax = Vector2.one;
+            contentRect.pivot = new Vector2(0.5f,1f); contentRect.sizeDelta = Vector2.zero;
+            var layout = content.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 2f; layout.childControlWidth = true; layout.childControlHeight = true;
+            layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
+            var item = new GameObject("Clan choice", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            item.SetActive(false); item.transform.SetParent(content.transform, false);
+            item.GetComponent<LayoutElement>().preferredHeight = 34f;
+            var button = item.AddComponent<GameUISelectableButton>(); button.targetGraphic = item.GetComponent<Image>();
+            button.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
+            var label = SoulSaviorChecklistPage.Label(template!, item.transform, "Clan choice name", 10f, -3f, 420f, 28f, 22f);
+            Fit(label, 14f, 22f); LogbookProgressTheme.Button(button, label, true);
+            var dataView = item.AddComponent<SettableLabel>();
+            AccessTools.Field(typeof(SettableLabel), "label").SetValue(dataView, label);
+            item.AddComponent<ClanDropdownFocus>();
+            clanScroll = menu.GetComponent<ScrollRect>(); clanScroll.viewport = viewportRect; clanScroll.content = contentRect;
+            clanScroll.horizontal = false; clanScroll.vertical = true;
+            clanScroll.movementType = ScrollRect.MovementType.Clamped; clanScroll.scrollSensitivity = 24f;
+            AccessTools.Field(typeof(GameUISelectableDropdown), "dropdownList").SetValue(clanDropdown, menu);
+            AccessTools.Field(typeof(GameUISelectableDropdown), "valueLabel").SetValue(clanDropdown, clanDropdownCaption);
+            clanDropdown.optionChosenSignal.AddListener((index, name) =>
+            {
+                if (index < 0 || index >= clanChoiceIndices.Count) return;
+                clanFilter = clanChoiceIndices[index]; ResetPage();
+                EventSystem.current?.SetSelectedGameObject(clanDropdown.gameObject);
+            });
+            controls.Add((clanDropdown, clanDropdownCaption, 1, 1));
+            RefreshClanChoices(); obj.SetActive(true);
+        }
+        void RefreshClanChoices()
+        {
+            if (clanDropdown == null || clanDropdownCaption == null || clanScroll == null) return;
+            string language = I2.Loc.LocalizationManager.CurrentLanguageCode;
+            if (dropdownLanguage != language || clanChoiceIndices.Count == 0)
+            {
+                clanDropdown.Close(); dropdownLanguage = language;
+                var choices = ProgressQueries.ClanChoices(ClanCatalog(), ProgressText.Get("AllClans"), ProgressText.Get("Neutral"));
+                clanChoiceIndices.Clear(); clanChoiceIndices.AddRange(choices.Select(c => c.Index));
+                clanDropdown.SetOptions(choices.Select(c => c.Name).ToList());
+                clanScroll.content.sizeDelta = new Vector2(0f, choices.Count * 36f - 2f);
+                foreach (var item in clanScroll.content.GetComponentsInChildren<SettableLabel>(true))
+                {
+                    var label = item.GetComponentInChildren<TMP_Text>(); LogbookProgressTheme.Ink(label);
+                    var button = item.GetComponent<GameUISelectableButton>();
+                    LogbookProgressTheme.Tooltip(item.gameObject).SetTooltipLocalized(label.text, "", TooltipDesigner.TooltipDesignType.DefaultWide);
+                }
+            }
+            ClanDropdownModal.Link(clanScroll.content.GetComponentsInChildren<SettableLabel>(true)
+                .Where(e => e.gameObject.activeSelf).Select(e => e.GetComponent<GameUISelectableButton>()).ToList());
+            int selected = Math.Max(0, clanChoiceIndices.IndexOf(clanFilter));
+            clanDropdown.SetIndex(selected);
+            // Separate arrow keeps long names available in the native selector's tooltip.
+            clanDropdownCaption.text += "  ▾";
+            var entries = clanScroll.content.GetComponentsInChildren<SettableLabel>();
+            for (int i = 0; i < entries.Length; i++)
+                LogbookProgressTheme.Select(entries[i].GetComponent<GameUISelectableButton>(), i == selected, true);
+        }
+        void FocusClanChoice()
+        {
+            if (clanScroll == null) return;
+            var entries = clanScroll.content.GetComponentsInChildren<SettableLabel>();
+            int index = Math.Max(0, clanChoiceIndices.IndexOf(clanFilter));
+            if (index < entries.Length) EventSystem.current?.SetSelectedGameObject(entries[index].gameObject);
+        }
         void BuildSearch()
         {
             var obj = new GameObject("Progress search", typeof(RectTransform), typeof(Image));
@@ -171,10 +323,35 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             obj.SetActive(true);
         }
         internal bool ApplyInput(CoreInputControlMapping mapping, IGameUIComponent? target, InputManager.Controls control)
-            => isActiveAndEnabled && searchContainer != null && searchContainer.ApplyScreenInput(mapping, target!, control);
+        {
+            if (!isActiveAndEnabled) return false;
+            if (clanDropdown != null && clanDropdown.gameObject.activeInHierarchy)
+            {
+                bool wasOpen = (bool)AccessTools.Field(typeof(GameUISelectableDropdown), "open").GetValue(clanDropdown);
+                if (clanDropdown.ApplyScreenInput(mapping, target!, control))
+                {
+                    if (!wasOpen && clanMenu != null && clanMenu.gameObject.activeSelf) FocusClanChoice();
+                    return true;
+                }
+                // Prevent page turns, search and table actions while the list is open.
+                if (wasOpen) return true;
+            }
+            return searchContainer != null && searchContainer.ApplyScreenInput(mapping, target!, control);
+        }
+        public override void Close() { clanDropdown?.Close(); base.Close(); }
         public override IGameUIComponent? GetDefaultGameUISelectable() => firstTab;
         public override void Open() { base.Open(); RefreshData(); }
-        void SetView(int value) { view = value; selectedClan = ""; query = ""; search?.SetTextWithoutNotify(""); page = 0; Render(); }
+        void SetView(int value)
+        {
+            clanDropdown?.Close();
+            if (value == view) return;
+            browseMemory.Save(view, new ProgressBrowseState(page, query, selectedClan, clanListPage, clanListQuery));
+            var restored = browseMemory.Restore(value);
+            view = value; page = restored.Page; query = restored.Query; selectedClan = restored.SelectedClan;
+            clanListPage = restored.ClanListPage; clanListQuery = restored.ClanListQuery;
+            search?.SetTextWithoutNotify(query);
+            Render(); // Clamp the restored page if new data has reduced the result count.
+        }
         internal int ResultPage => page;
         internal int ResultPageCount => ProgressQueries.PageCount(visible.Count, RowsPerPage);
         internal void AdvancePage(int direction) { page = Mathf.Clamp(page + direction, 0, ResultPageCount - 1); Render(); }
@@ -194,15 +371,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
         void ChangeB()
         {
-            if (view == 0) clanFilter = (clanFilter + 1) % (clans.Count + 2);
-            else if (view == 1) sort = (ProgressSort)(((int)sort + 1) % 3);
+            if (view == 1) sort = (ProgressSort)(((int)sort + 1) % 3);
             else RefreshData();
             ResetPage();
         }
         void ResetFilters()
         {
-            selectedClan = ""; mode = UsageMode.All; clanFilter = 0; soulFilter = ProgressFilter.All;
-            champion = -1; sort = ProgressSort.Name; query = "";
+            selectedClan = ""; query = "";
+            if (view == 0) { mode = UsageMode.All; clanFilter = 0; }
+            else if (view == 1) { champion = -1; sort = ProgressSort.Name; clanListPage = 0; clanListQuery = ""; }
+            else soulFilter = ProgressFilter.All;
             if (search != null) search.SetTextWithoutNotify(""); ResetPage();
         }
         bool HasCurrentFilters => query.Trim().Length > 0 || (view == 0 ? mode != UsageMode.All || clanFilter != 0
@@ -241,6 +419,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         void Render()
         {
             if (save == null || title == null || summary == null || footer == null || header == null) return;
+            if (clanDropdown != null)
+            {
+                clanDropdown.gameObject.SetActive(view == 0);
+                optionBButton!.gameObject.SetActive(view != 0);
+                RefreshClanChoices();
+            }
             foreach (var control in controls.Where(c => c.Row == 0))
                 LogbookProgressTheme.Select(control.Button, control.Column == view);
             cardsCaption!.text = ProgressText.Get("Cards");
@@ -258,7 +442,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             optionB!.text = view == 0 ? (clanFilter == 0 ? ProgressText.Get("AllClans") : clanFilter == 1 ? ProgressText.Get("Neutral") : clans[clanFilter - 2].GetTitle())
                 : view == 1 ? ProgressText.Get(sort == ProgressSort.Name ? "Name" : sort == ProgressSort.Progress ? "ProgressOrder" : "PendingOrder") : ProgressText.Get("Refresh");
             optionC!.text = view == 1 && selectedClan.Length > 0 ? ProgressText.Get("AllClans") : ProgressText.Get("Clear");
-            foreach (var control in controls.Where(c => c.Row == 1))
+            foreach (var control in controls.Where(c => c.Row == 1 && c.Button.gameObject.activeSelf))
             {
                 bool active = control.Column == 0 ? view == 0 ? mode != UsageMode.All : view == 1 ? champion >= 0 : soulFilter != ProgressFilter.All
                     : control.Column == 1 && (view == 0 ? clanFilter != 0 : view == 1 && sort != ProgressSort.Name);
@@ -268,11 +452,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             LogbookProgressTheme.Select(goalButton, goal > 0);
             foreach (var control in controls.Where(c => c.Row == 4 && c.Column == 1))
                 control.Button.interactable = query.Length > 0;
-            foreach (var control in controls)
+            foreach (var control in controls.Where(c => c.Button.gameObject.activeSelf))
             {
-                var tooltip = control.Button.GetComponent<TooltipProviderComponent>()
-                    ?? control.Button.gameObject.AddComponent<TooltipProviderComponent>();
-                bool cyclic = control.Row == 2 || control.Row == 1 && (control.Column == 0 || control.Column == 1 && view != 2);
+                var tooltip = LogbookProgressTheme.Tooltip(control.Button.gameObject);
+                bool cyclic = !(control.Button is GameUISelectableDropdown) && (control.Row == 2 || control.Row == 1 && (control.Column == 0 || control.Column == 1 && view != 2));
                 tooltip.SetTooltipLocalized(control.Caption.text, cyclic ? ProgressText.Get("CycleHint") : control.Caption.text,
                     TooltipDesigner.TooltipDesignType.DefaultWide);
             }
@@ -404,6 +587,15 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 search.textComponent.rectTransform.sizeDelta = new Vector2(width - 16f, 28f);
                 searchPlaceholder!.rectTransform.sizeDelta = new Vector2(width - 16f, 28f);
             }
+            if (clanDropdown != null && clanMenu != null)
+            {
+                float width = cell;
+                SetRect(clanMenu, cell + 12f, -140f, width,
+                    Mathf.Min(360f, clanChoiceIndices.Count * 36f + 12f));
+                clanMenu.SetAsLastSibling();
+                foreach (var label in clanMenu.GetComponentsInChildren<TMP_Text>(true))
+                    label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width - 28f);
+            }
             foreach (var row in rows)
             {
                 ((RectTransform)row.Button.transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, measuredWidth);
@@ -422,9 +614,8 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 if (label != null)
                 {
                     label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, measuredWidth);
-                    var tooltip = label.GetComponent<TooltipProviderComponent>() ?? label.gameObject.AddComponent<TooltipProviderComponent>();
+                    var tooltip = LogbookProgressTheme.Tooltip(label.gameObject);
                     label.raycastTarget = true;
-                    if (label.GetComponent<GameUISelectable>() == null) label.gameObject.AddComponent<GameUISelectable>();
                     tooltip.SetTooltipLocalized(title?.text ?? ProgressText.Get("Progress"), label.text,
                         TooltipDesigner.TooltipDesignType.DefaultWide);
                 }
@@ -461,3 +652,11 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-02-1052||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Restaurar página de la lista además de búsqueda y campeón al volver del detalle
 
 // 2026-10-02-1104||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Adaptar ancho de nombres a cada tabla y permitir consultar encabezados y ayudas completos con tooltip
+
+// 2026-10-02-1557||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Corregir orden de creación de tooltips de encabezados que dejaba la pestaña vacía según LogOutput.log
+
+// 2026-10-02-1614||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Conservar búsquedas y páginas al cambiar vista; limpiar solo filtros de la vista actual y mantener el objetivo compartido
+
+// 2026-10-04-0535||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Sustituir filtro de clan por desplegable nativo con lista alfabética desplazable, elección directa y cierre con mando
+
+// 2026-10-04-0604||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressExplorerPage.cs||Desplegable en Canvas de pagina y ultimo hermano; aislamiento modal de tabla/buscador y navegacion vertical explicita sin salto horizontal

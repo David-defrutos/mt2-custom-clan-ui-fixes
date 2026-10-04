@@ -4,7 +4,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "frutos"
 name = "CustomClanUIFixes"
-versionNumber = "0.4.7"
+versionNumber = "0.4.8"
 description = "UI fixes for playing with many modded clans installed"
 websiteUrl = "https://github.com/David-defrutos/mt2-custom-clan-ui-fixes"
 containsNsfwContent = false
@@ -43,3 +43,5 @@ communities = [ "monster-train-2" ]
 # 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Preparar 0.4.6 con seguimiento por familias de almas; conservar comentarios históricos
 
 # 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Preparar 0.4.7 con mejoras 3, 5, 2 y 4 en el orden solicitado
+
+# 2026-10-04-1713||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\thunderstore.toml||Version de paquete 0.4.7 a 0.4.8

@@ -432,7 +432,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 var button = row.AddComponent<GameUISelectableButton>();
                 button.targetGraphic = background;
                 button.SetNavigation(new Navigation { mode = Navigation.Mode.Automatic });
-                var tooltip = row.AddComponent<TooltipProviderComponent>();
+                var tooltip = LogbookProgressTheme.Tooltip(row);
                 var iconObject = new GameObject("Soul icon", typeof(RectTransform), typeof(Image));
                 iconObject.transform.SetParent(row.transform, false);
                 var icon = iconObject.GetComponent<Image>();
@@ -641,30 +641,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         internal void SetIcon(SaveManager manager)
         {
             if (Tab == null) return;
-            var soul = Resources.FindObjectsOfTypeAll<SoulData>()
-                .Where(s => s.GetSoulTypeIcon() != null)
-                .OrderBy(s => s.GetSoulType()).ThenBy(s => s.GetID()).FirstOrDefault();
-            var icons = Tab.GetComponentsInChildren<Image>(true)
-                .Where(i => i.name.Equals("Icon", StringComparison.OrdinalIgnoreCase)
-                    || i.name.Equals("IconSelected", StringComparison.OrdinalIgnoreCase)).ToList();
-            if (icons.Count == 0)
-            {
-                var fallback = Tab.GetComponentsInChildren<Image>(true)
-                    .FirstOrDefault(i => i.name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0);
-                if (fallback != null) icons.Add(fallback);
-            }
-            foreach (var icon in icons)
-            {
-                if (soul != null) icon.sprite = soul.GetSoulTypeIcon();
-                icon.preserveAspect = true;
-                icon.raycastTarget = false;
-                bool selected = icon.name.IndexOf("selected", StringComparison.OrdinalIgnoreCase) >= 0;
-                float size = selected ? 48f : 42f;
-                icon.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
-                icon.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
-                icon.rectTransform.localScale = Vector3.one;
-                icon.color = selected ? Color.white : new Color(0.72f, 0.82f, 0.86f, 1f);
-            }
+            var soul = SoulCatalog.Concat(Resources.FindObjectsOfTypeAll<SoulData>())
+                .Where(s => !s.IsHidden && s.GetIcon() != null)
+                .OrderBy(s => s.name, StringComparer.Ordinal).FirstOrDefault();
+            var icon = Tab.GetComponent<SoulSaviorTabIcon>()
+                ?? Tab.gameObject.AddComponent<SoulSaviorTabIcon>();
+            icon.Configure(Tab, soul?.GetIcon());
             RefreshTabTooltip();
         }
 
@@ -715,7 +697,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             sidebarBody.fontSizeMin = 14f;
             sidebarBody.fontSizeMax = 22f;
             sidebarBody.gameObject.AddComponent<GameUISelectable>();
-            sidebarBody.gameObject.AddComponent<TooltipProviderComponent>();
+            LogbookProgressTheme.Tooltip(sidebarBody.gameObject);
             sidebarBody.raycastTarget = true;
             nextPending = SidebarButton(labelTemplate, "Next pending allies", -545f, () =>
             {
@@ -991,6 +973,57 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
     }
 
+    public sealed class SoulSaviorTabIcon : MonoBehaviour
+    {
+        Image[] images = Array.Empty<Image>();
+        readonly Dictionary<Image, bool> trophyStates = new();
+        Sprite? soulIcon;
+        bool logged;
+
+        internal void Configure(CompendiumTab tab, Sprite? soulIcon)
+        {
+            images = tab.GetComponentsInChildren<Image>(true);
+            // CMP_Button_SoulSavior_* are horizontal button decorations, not icons.
+            this.soulIcon = soulIcon;
+            Apply();
+        }
+
+        void OnEnable() { Canvas.willRenderCanvases += Apply; }
+        void OnDisable() { Canvas.willRenderCanvases -= Apply; }
+        void LateUpdate() { Apply(); }
+
+        void Apply()
+        {
+            // El Animator nativo puede restaurar el sprite del trofeo. Identificar
+            // el arte, no el nombre del GameObject, y sustituirlo antes del render.
+            foreach (var image in images)
+            {
+                if (image == null) continue;
+                string spriteName = image.sprite != null ? image.sprite.name : "";
+                if (spriteName == "CMP_Icon_Trophy_Normal") trophyStates[image] = false;
+                else if (spriteName == "CMP_Icon_Trophy_Selected") trophyStates[image] = true;
+                if (!trophyStates.TryGetValue(image, out bool isSelected)) continue;
+                if (soulIcon == null) continue;
+                image.overrideSprite = null;
+                image.sprite = soulIcon;
+                image.type = Image.Type.Simple;
+                image.preserveAspect = true;
+                float size = isSelected ? 48f : 42f;
+                image.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
+                image.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
+                // Solo el gráfico central; el marco, pin y hitbox nativos se conservan.
+            }
+            if (!logged && images.Length > 0)
+            {
+                logged = true;
+                Plugin.Logger.LogInfo("[SoulSavior] Iconos sustituidos por sprite: " + trophyStates.Count
+                    + "; alma=" + (soulIcon != null ? soulIcon.name : "sin icono")
+                    + "; gráficos=" + string.Join("; ", images.Select(i => i.name + "/"
+                        + (i.sprite != null ? i.sprite.name : "sin sprite"))));
+            }
+        }
+    }
+
     public sealed class SoulSaviorTabPlacement : MonoBehaviour
     {
         internal List<CompendiumTab> Originals = new();
@@ -1097,7 +1130,31 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 
     // Decorative graphics never receive input; the native dispatcher owns every button.
     public sealed class LogbookInkLabel : MonoBehaviour
-    { internal bool Heading; }
+    {
+        internal bool Heading;
+        Material? ownedMaterial;
+        internal void ApplyMaterial(TMP_Text text)
+        {
+            if (ownedMaterial != null && text.fontSharedMaterial == ownedMaterial) return;
+            var previous = ownedMaterial;
+            ownedMaterial = new Material(text.fontSharedMaterial)
+            { name = text.fontSharedMaterial.name + " (Logbook ink)", hideFlags = HideFlags.DontSave };
+            // The native label's shader can retain stroke and dilation even when TMP's cached outline is zero.
+            foreach (var property in new[] { "_FaceDilate", "_OutlineWidth", "_OutlineSoftness", "_WeightNormal", "_WeightBold",
+                "_UnderlayDilate", "_UnderlaySoftness", "_UnderlayOffsetX", "_UnderlayOffsetY" })
+                if (ownedMaterial.HasProperty(property)) ownedMaterial.SetFloat(property, 0f);
+            foreach (var keyword in new[] { "OUTLINE_ON", "UNDERLAY_ON", "UNDERLAY_INNER", "GLOW_ON" })
+                ownedMaterial.DisableKeyword(keyword);
+            if (ownedMaterial.HasProperty("_FaceColor")) ownedMaterial.SetColor("_FaceColor", Color.white);
+            text.fontSharedMaterial = ownedMaterial;
+            text.UpdateMeshPadding();
+            if (previous != null) UnityEngine.Object.Destroy(previous);
+        }
+        void OnDestroy()
+        {
+            if (ownedMaterial != null) UnityEngine.Object.Destroy(ownedMaterial);
+        }
+    }
 
     internal static class LogbookProgressTheme
     {
@@ -1107,8 +1164,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             var marker = text.GetComponent<LogbookInkLabel>() ?? text.gameObject.AddComponent<LogbookInkLabel>();
             marker.Heading = heading;
             text.color = heading ? new Color(0.38f, 0.09f, 0.07f, 1f) : InkColor;
-            text.outlineWidth = 0f;
-            text.lineSpacing = 3f;
+            text.fontStyle = FontStyles.Normal;
+            text.fontWeight = FontWeight.Regular;
+            marker.ApplyMaterial(text);
+            text.characterSpacing = 2f;
+            text.wordSpacing = 3f;
+            text.lineSpacing = 8f;
+            text.paragraphSpacing = 4f;
         }
         static Image Graphic(Transform parent, string name, Color color, Vector2 min, Vector2 max,
             Vector2 offsetMin, Vector2 offsetMax)
@@ -1149,6 +1211,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             colors.selectedColor = colors.highlightedColor; colors.pressedColor = new Color(0.40f,0.23f,0.10f,1f);
             colors.disabledColor = new Color(0.48f,0.41f,0.31f,0.4f); colors.fadeDuration = 0.12f;
             button.transition = Selectable.Transition.ColorTint; button.colors = colors;
+        }
+        internal static TooltipProviderComponent Tooltip(GameObject obj)
+        {
+            // Unity cannot satisfy RequireComponent(IGameUIComponent) by adding an interface.
+            if (obj.GetComponent<IGameUIComponent>() == null) obj.AddComponent<GameUISelectable>();
+            return obj.GetComponent<TooltipProviderComponent>() ?? obj.AddComponent<TooltipProviderComponent>();
         }
         internal static void Status(Transform parent, bool complete)
         {
@@ -1238,3 +1306,13 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-02-1104||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Compactar acciones ocultas y ayudas de la ficha; actualizar medidas solo cuando cambia geometría o contenido
 
 // 2026-10-02-1106||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar navegación compacta también con altura insuficiente para evitar cortar el panel lateral
+
+// 2026-10-02-1557||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Crear primero el componente UI concreto requerido por los tooltips para impedir abortar la pestaña
+
+// 2026-10-04-0521||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Aligerar textos en tinta mediante material propio sin contorno/dilatación/sombra y aumentar separación de letras y líneas
+
+// 2026-10-04-0535||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Usar icono de alma en la pestaña Soul Savior en lugar del tipo de alma que repetía el trofeo
+
+// 2026-10-04-0559||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Identificar sprites CMP_Icon_Trophy y sustituir ambos estados por arte Soul Savior antes del render; conservar geometria nativa
+
+// 2026-10-04-0623||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookSoulSavior.cs||Sustituir decoracion horizontal por SoulData.GetIcon en Image Simple 42/48, sin overrideSprite y conservando marco nativo

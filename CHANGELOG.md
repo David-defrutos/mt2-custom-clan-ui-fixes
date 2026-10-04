@@ -4,16 +4,20 @@
 
 ## Español
 
-### Próxima versión
+### 0.4.8
 
+**Nota de desarrollo:** La página **Progress · Cards** de Soul Savior sigue en desarrollo. He decidido publicar esta actualización porque ya incluye numerosas mejoras en el seguimiento de Soul Savior.
+
+- Menú de clanes con fondo opaco y navegación independiente: la tabla y el buscador dejan de recibir selección mientras el desplegable está abierto.
+- Corregida la sustitución del trofeo en los estados normal y seleccionado de la pestaña Soul Savior, también tras las animaciones.
+- Selector de clan desplegable con lista alfabética y desplazamiento, para elegir directamente en lugar de recorrer todos los clanes. Icono de alma propio para la pestaña Soul Savior, evitando repetir el trofeo.
+- Texto de información más ligero y espaciado: peso regular, sin contorno ni sombra, con mayor separación de letras, palabras y líneas.
+- Cartas, Clanes y Almas conservan por separado búsqueda y página mientras el libro está abierto, incluido el detalle de aliados. Limpiar afecta solo a la vista actual; pulsar la pestaña activa conserva su posición.
+- Corregido un fallo al crear los tooltips de los encabezados que podía impedir mostrar la nueva pestaña del logbook.
 - Menos huecos en el panel lateral, más espacio para nombres en las tablas y tooltips para títulos y ayudas completos. La navegación compacta también se activa cuando falta altura.
-
 - Filtros activos destacados, ayudas localizadas para recorrer opciones, contador de resultados y mensajes centrados para tablas vacías. Volver del detalle de clan conserva la página y la búsqueda de la lista.
-
 - Tarjetas de almas con el mismo estilo del libro, tablas con filas alternas y valores alineados, marcas de objetivo y buscador enmarcado. Los tooltips de almas se limpian si falla la lectura del tracker.
-
 - Interfaz de Soul Savior y Progreso más integrada con el libro: botones enmarcados, selección dorada, texto en tinta y bloques separados.
-
 - Accesos Almas, Clanes y Progreso dentro de Soul Savior, con memoria de página durante la sesión.
 - Ranking de cartas más jugadas, con búsqueda y filtros por clan y modo; usos directos y automáticos separados.
 - Objetivo de dificultad para combinaciones y almas, con contadores completos, porcentaje y barra de progreso.
@@ -75,16 +79,20 @@
 
 ## English
 
-### Unreleased
+### 0.4.8
 
+**Development note:** The **Progress · Cards** page inside Soul Savior is still under development. I'm releasing this update now because it already brings substantial improvements to Soul Savior tracking.
+
+- Clan dropdown now has an opaque background and isolated navigation; the table and search field cannot receive selection while the menu is open.
+- Fixed Soul Savior tab artwork in both normal and selected states, including after button animations.
+- Scrollable alphabetical clan dropdown for direct selection instead of cycling through every clan. Soul Savior now uses a soul icon instead of repeating the trophy.
+- Lighter, more spacious information text: regular weight, no outline or shadow, and increased letter, word and line spacing.
+- Cards, Clans and Souls keep separate searches and pages while the logbook is open, including ally details. Clear affects only the current view; selecting the active tab preserves its position.
+- Fixed heading tooltip initialization that could prevent the new logbook tab from displaying.
 - Tighter sidebar spacing, more room for table names and full-text tooltips for headings and help. Compact navigation also handles insufficient height.
-
 - Highlighted active filters, localized option hints, result counts and centered empty states. Returning from clan details restores the list page and search.
-
 - Matching soul cards, alternating table rows, aligned values, goal markers and a framed search field. Soul tooltips clear stale results when tracker records cannot be read.
-
 - Refined Soul Savior and Progress styling with framed buttons, gold selection, ink text and clearer sections matching the logbook.
-
 - Souls, Clans and Progress shortcuts within Soul Savior, with page memory during the session.
 - Most-played card ranking with search, clan and mode filters, and separate direct and automatic counts.
 - Difficulty goals for clan combinations and souls, with complete totals, percentage and a progress bar.
@@ -177,3 +185,19 @@
 <!-- 2026-10-02-1052||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir mejoras de claridad de controles y retorno de detalle al changelog bilingüe -->
 
 <!-- 2026-10-02-1107||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Registrar ajuste de espacio y textos largos en changelog bilingüe -->
+
+<!-- 2026-10-02-1559||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Registrar corrección de pestaña vacía en notas bilingües -->
+
+<!-- 2026-10-02-1615||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir memoria y limpieza por vista al changelog bilingüe -->
+
+<!-- 2026-10-04-0522||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar mejora de legibilidad en notas públicas bilingües -->
+
+<!-- 2026-10-04-0538||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar desplegable de clanes e icono distinto en notas bilingües -->
+
+<!-- 2026-10-04-0601||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir correccion del icono duplicado a novedades ES/EN -->
+
+<!-- 2026-10-04-0607||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir correccion de superposicion y navegacion del menu en ES/EN -->
+
+<!-- 2026-10-04-1713||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Cerrar novedades como 0.4.8 y explicar en ES/EN publicacion por mejoras Soul Savior con Cards en desarrollo -->
+
+<!-- 2026-10-04-1714||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Conservar separacion CommonMark entre titulos/nota de desarrollo y listas -->

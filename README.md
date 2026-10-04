@@ -158,7 +158,12 @@ also works on the logbook: it lists the champion upgrade and artifacts pages in 
 and it gives modded clans a progress record page of their own. Both mods work together: this
 one has been tested with Custom-Clan-Helper installed, progress record included.
 
-## Soul records
+## Soul Savior tracking
+
+**Development note:** The **Progress · Cards** page inside Soul Savior is still under development. I'm releasing this update now because it already brings substantial improvements to Soul Savior tracking.
+
+![Soul Savior soul records](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/soulforged-logbook-souls.png)
+
 
 The Soul Savior tab starts with a soul catalog: fifteen soul families per page, localized
 names, highest soul tier won and highest difficulty won. Those are independent records
@@ -166,6 +171,9 @@ from **ExpandedWinTracker by Conductor**, and can come from different victories.
 Clan combination pages follow the soul catalog. The left panel summarizes the current view.
 
 ## Clan details and missing victories
+
+![Soul Savior clan combinations and champion details](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/soulforged-logbook-clans.png)
+
 
 On clan pages, mouse focus or controller selection updates the left panel with missing
 allies and the highest Soul Savior difficulty won by each champion. Browse missing allies
@@ -187,7 +195,7 @@ tooltip. These counts are stored by CustomClanUIFixes in
 They are separate from ExpandedWinTracker’s Soul Savior victory records. Game saves and
 ExpandedWinTracker records are left untouched.
 
-## Next release: Progress explorer
+## Progress explorer
 
 Open **Logbook → Soul Savior → Progress**, then choose Cards, Clans or Souls.
 
@@ -344,7 +352,14 @@ tambien trabaja sobre el logbook: tiene las paginas de mejoras y de artefactos e
 y da a los clanes modeados una hoja de progreso propia. Los dos mods funcionan juntos: este se
 ha probado con Custom-Clan-Helper instalado, hoja de progreso incluida.
 
-## Próxima versión: explorador de Progreso
+## Explorador de Progreso
+
+**Nota de desarrollo:** La página **Progress · Cards** de Soul Savior sigue en desarrollo. He decidido publicar esta actualización porque ya incluye numerosas mejoras en el seguimiento de Soul Savior.
+
+![Seguimiento de almas en Soul Savior](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/soulforged-logbook-souls.png)
+
+![Combinaciones de clanes y detalles por campeón](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/soulforged-logbook-clans.png)
+
 
 Abre **Logbook → Soul Savior → Progreso** y elige Cartas, Clanes o Almas.
 
@@ -366,15 +381,15 @@ MIT.
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||0.3.0: secciones nuevas de la hoja de progreso y de la caja de busqueda (ingles y espanol) con sus dos capturas, tablas [ProgressGrid] y [CardFilter], [ArtifactsPaging] RetryFrames 5->10 y Balance anadido, pies de captura a 19 clanes, relacion con Custom-Clan-Helper reescrita -->
 <!-- 2026-09-23-0058||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/README.md||relacion con Custom-Clan-Helper (ingles y espanol): fuera la advertencia de "no probado juntos"; probado el 23-sep con CCH activo, hoja de progreso incluida -->
 
-## Soul Savior: combinaciones de clanes (0.4.5)
+## Soul Savior: combinaciones de clanes
 
 Si existe el guardado de ExpandedWinTracker, el logbook añade una octava pestaña superior para Soul Savior, con cinco clanes por página y contador independiente. El registro normal agrupa también los clanes del DLC para aprovechar la última hoja. Conserva los retratos y banderas de aliados, muestra la máxima dificultad ganada como S0, S1, etc., y ofrece detalle por campeón en el tooltip de cada bandera. Un guion indica que no hay victoria registrada. El contador de la derecha indica aliados con alguna victoria / aliados disponibles.
 
 Lee BepInEx/config/ExpandedWinTracker.Plugin/extraMetagameSave.json al abrir cada página. ExpandedWinTracker sigue encargándose de registrar las victorias; esta integración no escribe en su guardado ni en el metajuego normal. Las victorias normales y las coronas no se sustituyen.
 
-Se puede desactivar con [SoulSavior] Enabled = false. ExpandedWinTracker se instala como dependencia; ejecuta el juego una vez para generar sus registros. Si todavía no existe el guardado, no se añade la pestaña. Si el fichero no puede leerse, se muestra un aviso y se ocultan los resultados para evitar mostrarlos como derrotas.
+Se puede desactivar con [SoulSavior] Enabled = false. ExpandedWinTracker se instala como dependencia; ejecuta el juego una vez para generar sus registros. Si todavía no existe el guardado, se muestra un aviso de datos no disponibles. Si el fichero no puede leerse, se muestra un aviso y se ocultan los resultados para evitar mostrarlos como derrotas.
 
-Esta versión integra las combinaciones de clanes. La lista de victorias por alma todavía no tiene página propia.
+Las vistas Almas y Clanes tienen accesos propios en el panel izquierdo; Progreso reúne las tablas y el ranking de cartas, cuya página sigue en desarrollo.
 
 Compatible con los registros de ExpandedWinTracker, de Monster Train 2 Modding Group:
 https://github.com/Monster-Train-2-Modding-Group/Expanded-Win-Tracker
@@ -402,3 +417,5 @@ El seguimiento Soul Savior utiliza **ExpandedWinTracker by Conductor**: registra
 <!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentación pública de panel, filtro, navegación y contador propio: origen, exclusiones, intentos y ubicación/configuración -->
 
 <!-- 2026-10-02-0931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Documentar acceso, filtros, campeones, objetivos y navegación del explorador de próxima versión en ambos idiomas -->
+
+<!-- 2026-10-04-1713||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Anadir capturas con URL absoluta y aviso ES/EN Progress Cards en desarrollo; retirar afirmaciones obsoletas -->

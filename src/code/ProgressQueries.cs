@@ -51,6 +51,27 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         }
     }
 
+    // Session-only browsing state; this never writes tracker or game saves.
+    internal sealed class ProgressBrowseState
+    {
+        internal readonly int Page, ClanListPage;
+        internal readonly string Query, SelectedClan, ClanListQuery;
+        internal ProgressBrowseState(int page = 0, string query = "", string selectedClan = "",
+            int clanListPage = 0, string clanListQuery = "")
+        {
+            Page = Math.Max(0, page); Query = query; SelectedClan = selectedClan;
+            ClanListPage = Math.Max(0, clanListPage); ClanListQuery = clanListQuery;
+        }
+    }
+    internal sealed class ProgressBrowseMemory
+    {
+        readonly ProgressBrowseState[] views = { new(), new(), new() };
+        internal void Save(int view, ProgressBrowseState state) { Validate(view); views[view] = state; }
+        internal ProgressBrowseState Restore(int view) { Validate(view); return views[view]; }
+        static void Validate(int view)
+        { if (view < 0 || view >= 3) throw new ArgumentOutOfRangeException(nameof(view)); }
+    }
+
     internal enum ProgressFilter { All, Missing, BelowGoal }
     internal enum ProgressSort { Name, Progress, Pending }
     internal enum UsageMode { All, Normal, SoulSavior, Other }
@@ -71,6 +92,14 @@ namespace mt2_custom_clan_ui_fixes.Plugin
     // Queries only: filtering never changes a tracker save or invents historical usage.
     internal static class ProgressQueries
     {
+        internal static List<(int Index, string Name)> ClanChoices(IEnumerable<ProgressIdentity> catalog,
+            string allLabel, string neutralLabel)
+        {
+            var choices = new List<(int Index, string Name)> { (0, allLabel), (1, neutralLabel) };
+            choices.AddRange(catalog.Select((clan, index) => (Index: index + 2, Name: clan.Name))
+                .OrderBy(c => c.Name, StringComparer.CurrentCulture).ThenBy(c => c.Index));
+            return choices;
+        }
         internal static bool Matches(string name, string query) => string.IsNullOrWhiteSpace(query)
             || CultureInfo.CurrentCulture.CompareInfo.IndexOf(name, query.Trim(),
                 CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
@@ -153,3 +182,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-02-0919||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressQueries.cs||Estado probado de navegación con tercera vista y conservación de memorias al cambiar ancho
 
 // 2026-10-02-0926||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressQueries.cs||Exponer cómputo real de contador nativo de tablas para probar coherencia con vistas compactas
+
+// 2026-10-02-1614||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressQueries.cs||Añadir memoria inmutable por vista para búsqueda, página y detalle de clan durante la sesión
+
+// 2026-10-04-0535||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\ProgressQueries.cs||Preparar opciones de clan ordenadas por nombre conservando el índice original del filtro
