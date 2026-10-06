@@ -14,6 +14,18 @@ Keep the logbook usable when you have many clans installed. CustomClanUIFixes ad
 
 ![Paginated artifact columns](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-artifacts-page1.png)
 
+### Progress Record with many clans
+
+![Progress Record with five clan rows and balanced ally flags](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/logbook-progress-record-many-clans.png)
+
+Five clans per page, balanced ally flags and aligned mastery grids. / Cinco clanes por página, banderas de aliados repartidas y medidores de maestría alineados.
+
+### Card filters with many clans
+
+![Card filters with multiple rows of clan buttons and a clear search field](https://raw.githubusercontent.com/David-defrutos/mt2-custom-clan-ui-fixes/main/screenshots/card-filters-many-clans.png)
+
+Multiple rows of clan buttons, with the search field kept clear. The cards shown belong to other installed mods. / Varias filas de botones de clan y buscador despejado. Las cartas mostradas pertenecen a otros mods instalados.
+
 ## Version 0.5.0: Soul Savior has its own logbook
 
 Install [SoulSaviorLogbook](https://thunderstore.io/c/monster-train-2/p/frutos/SoulSaviorLogbook/) for the **Souls and Clans** views, champion records and pending allies. The two mods can be used together.
@@ -45,3 +57,5 @@ Arreglos de interfaz para jugar con muchos clanes instalados:
 **Progress · Cards sigue en desarrollo** y su explorador no se incluye en esta versión. Se conservan los usos ya registrados y sus tooltips.
 
 Instálalo mediante el gestor de mods. Los ajustes están en `BepInEx/config/mt2_custom_clan_ui_fixes.Plugin.cfg`; cada arreglo puede activarse por separado.
+
+<!-- 2026-10-06-2245||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\README.md||Anadir capturas de registro normal y filtros con URL absoluta y pies bilingues, conservando contenido vigente 0.5.0 -->
