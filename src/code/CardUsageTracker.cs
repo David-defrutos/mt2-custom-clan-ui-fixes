@@ -72,12 +72,12 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 var all = current.Get(cardState.GetCardDataID());
                 var normal = current.Get(cardState.GetCardDataID(), RunType.Class.ToString());
                 var souls = current.Get(cardState.GetCardDataID(), RunType.RegionRun.ToString());
-                string body = SoulSaviorText.Extra("Direct") + ": " + all.Direct
-                    + "\n" + SoulSaviorText.Extra("Automatic") + ": " + all.Automatic
-                    + "\n" + SoulSaviorText.Extra("Normal") + ": " + checked(normal.Direct + normal.Automatic)
+                string body = CardUsageText.Extra("Direct") + ": " + all.Direct
+                    + "\n" + CardUsageText.Extra("Automatic") + ": " + all.Automatic
+                    + "\n" + CardUsageText.Extra("Normal") + ": " + checked(normal.Direct + normal.Automatic)
                     + "\nSoul Savior: " + checked(souls.Direct + souls.Automatic)
-                    + "\n\n" + SoulSaviorText.Extra("UsageNote");
-                __instance.ShowTooltip(new TooltipContent(SoulSaviorText.Extra("Plays") + ": "
+                    + "\n\n" + CardUsageText.Extra("UsageNote");
+                __instance.ShowTooltip(new TooltipContent(CardUsageText.Extra("Plays") + ": "
                     + checked(all.Direct + all.Automatic), body, TooltipDesigner.TooltipDesignType.DefaultWide,
                     "CustomClanUIFixes.CardUsage"), suppressRelayout: true);
             }
@@ -91,3 +91,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-10-02-0044||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\CardUsageTracker.cs||Guardar referencia al replay manager para exclusión segura y compilación sin aviso nullable
 
 // 2026-10-02-0052||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\CardUsageTracker.cs||Subtotal normal usando RunType.Class real; excluir partidas sin modo y guardados de editor
+
+// 2026-10-04-2146||codex-soulsavior-split||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\CardUsageTracker.cs||Desacoplar traducciones de usos de cartas

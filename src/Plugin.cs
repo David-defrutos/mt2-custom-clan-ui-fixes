@@ -193,10 +193,6 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             CardFilterSearch.MinOverlap = cfgFiltroSolape.Value;
             CardFilterSearch.Levels = cfgFiltroNiveles.Value;
 
-            LogbookSoulSavior.Enabled = Config.Bind(
-                "SoulSavior", "Enabled", true,
-                "Muestra paginas de combinaciones Soul Savior en el registro de progreso, leyendo ExpandedWinTracker. No modifica sus registros.").Value;
-
             CardUsageTracker.Enabled = Config.Bind("CardUsage", "Enabled", true,
                 "Track actual card plays from installation onwards. Replays and abilities are excluded; direct and automatic plays are counted separately.").Value;
             new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll();
@@ -214,3 +210,5 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio
 
 // 2026-10-02-0039||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||Añadir ajuste CardUsage.Enabled para contador histórico
+
+// 2026-10-04-2146||codex-soulsavior-split||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\Plugin.cs||Retirar configuración de Soul Savior; mantener contador histórico de cartas

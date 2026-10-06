@@ -2,6 +2,13 @@
 
 # Historial de cambios
 
+## 0.5.0
+
+- Move Soul Savior Souls and Clans to the independent SoulSaviorLogbook plugin.
+- Remove the embedded Soul Savior tab and direct ExpandedWinTracker package dependency.
+- Keep UI fixes and card-usage tooltip tracking; defer the experimental Progress · Cards explorer without deleting its stored counts.
+
+
 ## Español
 
 ### 0.4.8
@@ -201,3 +208,5 @@
 <!-- 2026-10-04-1713||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Cerrar novedades como 0.4.8 y explicar en ES/EN publicacion por mejoras Soul Savior con Cards en desarrollo -->
 
 <!-- 2026-10-04-1714||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Conservar separacion CommonMark entre titulos/nota de desarrollo y listas -->
+
+<!-- 2026-10-04-2148||codex-soulsavior-split||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Notas UI 0.5.0 centradas en separación -->
