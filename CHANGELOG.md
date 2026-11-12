@@ -1,90 +1,25 @@
-[English follows ↓](#english)
+# Changelog
 
-# Historial de cambios
-
-## 0.5.0
-
-- Move Soul Savior Souls and Clans to the independent SoulSaviorLogbook plugin.
-- Remove the embedded Soul Savior tab and direct ExpandedWinTracker package dependency.
-- Keep UI fixes and card-usage tooltip tracking; defer the experimental Progress · Cards explorer without deleting its stored counts.
-
-
-## Español
-
-### 0.4.8
-
-**Nota de desarrollo:** La página **Progress · Cards** de Soul Savior sigue en desarrollo. He decidido publicar esta actualización porque ya incluye numerosas mejoras en el seguimiento de Soul Savior.
-
-- Menú de clanes con fondo opaco y navegación independiente: la tabla y el buscador dejan de recibir selección mientras el desplegable está abierto.
-- Corregida la sustitución del trofeo en los estados normal y seleccionado de la pestaña Soul Savior, también tras las animaciones.
-- Selector de clan desplegable con lista alfabética y desplazamiento, para elegir directamente en lugar de recorrer todos los clanes. Icono de alma propio para la pestaña Soul Savior, evitando repetir el trofeo.
-- Texto de información más ligero y espaciado: peso regular, sin contorno ni sombra, con mayor separación de letras, palabras y líneas.
-- Cartas, Clanes y Almas conservan por separado búsqueda y página mientras el libro está abierto, incluido el detalle de aliados. Limpiar afecta solo a la vista actual; pulsar la pestaña activa conserva su posición.
-- Corregido un fallo al crear los tooltips de los encabezados que podía impedir mostrar la nueva pestaña del logbook.
-- Menos huecos en el panel lateral, más espacio para nombres en las tablas y tooltips para títulos y ayudas completos. La navegación compacta también se activa cuando falta altura.
-- Filtros activos destacados, ayudas localizadas para recorrer opciones, contador de resultados y mensajes centrados para tablas vacías. Volver del detalle de clan conserva la página y la búsqueda de la lista.
-- Tarjetas de almas con el mismo estilo del libro, tablas con filas alternas y valores alineados, marcas de objetivo y buscador enmarcado. Los tooltips de almas se limpian si falla la lectura del tracker.
-- Interfaz de Soul Savior y Progreso más integrada con el libro: botones enmarcados, selección dorada, texto en tinta y bloques separados.
-- Accesos Almas, Clanes y Progreso dentro de Soul Savior, con memoria de página durante la sesión.
-- Ranking de cartas más jugadas, con búsqueda y filtros por clan y modo; usos directos y automáticos separados.
-- Objetivo de dificultad para combinaciones y almas, con contadores completos, porcentaje y barra de progreso.
-- Filtros de almas: todas, sin victoria y por debajo del objetivo.
-- Pendientes por campeón: seleccionar un clan muestra los aliados que le faltan al campeón elegido.
-- Búsqueda de clanes y orden por nombre, progreso o cantidad de pendientes. Las tablas usan las flechas del juego.
-
-### 0.4.7
-
-- Panel del clan seleccionado: aliados pendientes y mejor dificultad de cada campeón. Sigue el cursor y la selección con mando.
-- Navegación nativa en el catálogo de almas, tooltips y texto adaptable; los aliados pendientes se recorren por bloques.
-- Filtro «Sin victoria» para las combinaciones de Soul Savior, conservando los contadores completos.
-- Contador histórico de cartas en sus tooltips, con jugadas directas y automáticas separadas y subtotal Soul Savior. Agrupa copias y mejoras de la misma carta.
-- El recuento empieza al instalar esta función. Excluye habilidades, simulaciones y replays; conserva las jugadas reales previas a deshacer o reiniciar un combate.
-
-### 0.4.6
-
-- Seguimiento por alma en la pestaña Soul Savior, con iconos y nombres en el idioma del juego.
-- Quince almas por página y resumen de almas con victoria; las combinaciones de clanes siguen después del catálogo.
-- Nivel máximo del alma y dificultad máxima mostrados como récords independientes de ExpandedWinTracker.
-
-### 0.4.5
-
-- Nuevo resumen de Soul Savior en el panel izquierdo: combinaciones ganadas, clanes con victorias y máxima dificultad alcanzada.
-- Los textos de Soul Savior siguen el idioma seleccionado en el juego.
-- Icono de Soul Savior ajustado para encajar mejor en las pestañas del logbook.
-- ExpandedWinTracker by Conductor se instala automáticamente como dependencia. Gracias a Brandon por el seguimiento de victorias.
-
-### 0.4.4
-
-- Nueva pestaña de Soul Savior con acceso directo y cinco clanes por página.
-- Seguimiento de victorias por combinación de clan principal y aliado, con máxima dificultad ganada y detalles por campeón al pasar el cursor sobre las banderas.
-- Usa los registros de **ExpandedWinTracker by Conductor**, sin modificar sus guardados. Gracias a Brandon por ExpandedWinTracker.
-- Las banderas de aliados se reparten de forma equilibrada y dejan libre el retrato del clan.
-- Los clanes normales y del DLC comparten páginas para aprovechar mejor el espacio.
-- Ajustes de alineación de pestañas, cintas y medidores, y mejoras de navegación con mando.
-
-### 0.3.0
-
-- Registro de progreso con un clan por fila y cinco clanes por página, usando las flechas del juego.
-- Banderas de aliados a tamaño completo y medidores de maestría alineados, también para los clanes del DLC.
-- El adorno inferior del filtro de cartas deja de tapar la caja de búsqueda cuando hay muchos clanes.
-- Nuevos ajustes para el registro de progreso y los filtros de cartas. Registro detallado desactivado por defecto.
-
-### 0.2.1
-
-- Nuevas capturas y documentación en la página del mod. Sin cambios en su funcionamiento.
-
-### 0.2.0
-
-- Artefactos repartidos en páginas equilibradas, con las flechas del juego. Si todas las columnas caben, se mantiene una sola página.
-- Las mejoras de campeón respetan el espacio del título y permiten ajustar el tamaño de los iconos.
-
-### 0.1.0
-
-- Primera versión.
-- Rejilla de mejoras de campeón que permite ver y seleccionar todos los clanes instalados.
-- Opciones de configuración para ajustar o desactivar los cambios de interfaz.
+[English](#english) · [Español](#spanish) · [Français](#french) · [Deutsch](#german) · [Русский](#russian) · [Português (Brasil)](#portuguese-brazil) · [简体中文](#chinese) · [繁體中文](#chinese-traditional) · [한국어](#korean) · [日本語](#japanese)
 
 ## English
+
+### 0.5.1 — 2026-11-13
+
+#### Fixes
+
+- **Progress Record:** fixed the loading error after the game update replaced `RailforgedChecklistPage` with `DlcChecklistPage`. The mod detects either class name automatically.
+
+**Bug reports and suggestions are welcome!** [Report them on GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+### 0.5.0
+
+- Soul Savior Souls and Clans move to the independent SoulSaviorLogbook mod; both mods can be used together.
+- CustomClanUIFixes keeps the UI fixes and card-usage tracking in card tooltips.
+- Removed the embedded Soul Savior tab and direct ExpandedWinTracker dependency.
+- The experimental Progress · Cards explorer is still under development and is not included in this version. Existing stored counts are preserved.
+- New icon and updated screenshots of the Progress Record and card filters.
+
 
 ### 0.4.8
 
@@ -159,54 +94,204 @@
 - Champion-upgrade grid that makes all installed clans visible and selectable.
 - Configuration options to adjust or disable the interface changes.
 
+## Spanish
+
+### 0.5.1 — 2026-11-13
+
+#### Correcciones
+
+- **Registro de progreso:** corregido el error de carga tras la actualización del juego que sustituyó `RailforgedChecklistPage` por `DlcChecklistPage`. El mod detecta automáticamente cualquiera de los dos nombres.
+
+**¡Los informes de errores y las sugerencias son bienvenidos!** [Compártelos en GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+### 0.5.0
+
+- Las vistas Almas y Clanes de Soul Savior pasan al mod independiente SoulSaviorLogbook; ambos mods pueden utilizarse juntos.
+- CustomClanUIFixes conserva los arreglos de interfaz y el seguimiento de usos de cartas en sus tooltips.
+- Se retiran la pestaña Soul Savior integrada y la dependencia directa de ExpandedWinTracker.
+- El explorador experimental Progress · Cards sigue en desarrollo y no se incluye en esta versión. Sus recuentos guardados se conservan.
+- Nuevo icono y capturas actualizadas del registro de progreso y los filtros de cartas.
+
+
+### 0.4.8
+
+**Nota de desarrollo:** La página **Progress · Cards** de Soul Savior sigue en desarrollo. He decidido publicar esta actualización porque ya incluye numerosas mejoras en el seguimiento de Soul Savior.
+
+- Menú de clanes con fondo opaco y navegación independiente: la tabla y el buscador dejan de recibir selección mientras el desplegable está abierto.
+- Corregida la sustitución del trofeo en los estados normal y seleccionado de la pestaña Soul Savior, también tras las animaciones.
+- Selector de clan desplegable con lista alfabética y desplazamiento, para elegir directamente en lugar de recorrer todos los clanes. Icono de alma propio para la pestaña Soul Savior, evitando repetir el trofeo.
+- Texto de información más ligero y espaciado: peso regular, sin contorno ni sombra, con mayor separación de letras, palabras y líneas.
+- Cartas, Clanes y Almas conservan por separado búsqueda y página mientras el libro está abierto, incluido el detalle de aliados. Limpiar afecta solo a la vista actual; pulsar la pestaña activa conserva su posición.
+- Corregido un fallo al crear los tooltips de los encabezados que podía impedir mostrar la nueva pestaña del logbook.
+- Menos huecos en el panel lateral, más espacio para nombres en las tablas y tooltips para títulos y ayudas completos. La navegación compacta también se activa cuando falta altura.
+- Filtros activos destacados, ayudas localizadas para recorrer opciones, contador de resultados y mensajes centrados para tablas vacías. Volver del detalle de clan conserva la página y la búsqueda de la lista.
+- Tarjetas de almas con el mismo estilo del libro, tablas con filas alternas y valores alineados, marcas de objetivo y buscador enmarcado. Los tooltips de almas se limpian si falla la lectura del tracker.
+- Interfaz de Soul Savior y Progreso más integrada con el libro: botones enmarcados, selección dorada, texto en tinta y bloques separados.
+- Accesos Almas, Clanes y Progreso dentro de Soul Savior, con memoria de página durante la sesión.
+- Ranking de cartas más jugadas, con búsqueda y filtros por clan y modo; usos directos y automáticos separados.
+- Objetivo de dificultad para combinaciones y almas, con contadores completos, porcentaje y barra de progreso.
+- Filtros de almas: todas, sin victoria y por debajo del objetivo.
+- Pendientes por campeón: seleccionar un clan muestra los aliados que le faltan al campeón elegido.
+- Búsqueda de clanes y orden por nombre, progreso o cantidad de pendientes. Las tablas usan las flechas del juego.
+
+### 0.4.7
+
+- Panel del clan seleccionado: aliados pendientes y mejor dificultad de cada campeón. Sigue el cursor y la selección con mando.
+- Navegación nativa en el catálogo de almas, tooltips y texto adaptable; los aliados pendientes se recorren por bloques.
+- Filtro «Sin victoria» para las combinaciones de Soul Savior, conservando los contadores completos.
+- Contador histórico de cartas en sus tooltips, con jugadas directas y automáticas separadas y subtotal Soul Savior. Agrupa copias y mejoras de la misma carta.
+- El recuento empieza al instalar esta función. Excluye habilidades, simulaciones y replays; conserva las jugadas reales previas a deshacer o reiniciar un combate.
+
+### 0.4.6
+
+- Seguimiento por alma en la pestaña Soul Savior, con iconos y nombres en el idioma del juego.
+- Quince almas por página y resumen de almas con victoria; las combinaciones de clanes siguen después del catálogo.
+- Nivel máximo del alma y dificultad máxima mostrados como récords independientes de ExpandedWinTracker.
+
+### 0.4.5
+
+- Nuevo resumen de Soul Savior en el panel izquierdo: combinaciones ganadas, clanes con victorias y máxima dificultad alcanzada.
+- Los textos de Soul Savior siguen el idioma seleccionado en el juego.
+- Icono de Soul Savior ajustado para encajar mejor en las pestañas del logbook.
+- ExpandedWinTracker by Conductor se instala automáticamente como dependencia. Gracias a Brandon por el seguimiento de victorias.
+
+### 0.4.4
+
+- Nueva pestaña de Soul Savior con acceso directo y cinco clanes por página.
+- Seguimiento de victorias por combinación de clan principal y aliado, con máxima dificultad ganada y detalles por campeón al pasar el cursor sobre las banderas.
+- Usa los registros de **ExpandedWinTracker by Conductor**, sin modificar sus guardados. Gracias a Brandon por ExpandedWinTracker.
+- Las banderas de aliados se reparten de forma equilibrada y dejan libre el retrato del clan.
+- Los clanes normales y del DLC comparten páginas para aprovechar mejor el espacio.
+- Ajustes de alineación de pestañas, cintas y medidores, y mejoras de navegación con mando.
+
+### 0.3.0
+
+- Registro de progreso con un clan por fila y cinco clanes por página, usando las flechas del juego.
+- Banderas de aliados a tamaño completo y medidores de maestría alineados, también para los clanes del DLC.
+- El adorno inferior del filtro de cartas deja de tapar la caja de búsqueda cuando hay muchos clanes.
+- Nuevos ajustes para el registro de progreso y los filtros de cartas. Registro detallado desactivado por defecto.
+
+### 0.2.1
+
+- Nuevas capturas y documentación en la página del mod. Sin cambios en su funcionamiento.
+
+### 0.2.0
+
+- Artefactos repartidos en páginas equilibradas, con las flechas del juego. Si todas las columnas caben, se mantiene una sola página.
+- Las mejoras de campeón respetan el espacio del título y permiten ajustar el tamaño de los iconos.
+
+### 0.1.0
+
+- Primera versión.
+- Rejilla de mejoras de campeón que permite ver y seleccionar todos los clanes instalados.
+- Opciones de configuración para ajustar o desactivar los cambios de interfaz.
+
+## French
+
+### 0.5.1 — 2026-11-13
+
+#### Corrections
+
+- **Registre de progression:** correction de l’erreur de chargement après la mise à jour du jeu qui a remplacé `RailforgedChecklistPage` par `DlcChecklistPage`. Le mod détecte automatiquement l’un ou l’autre nom de classe.
+
+**Les signalements de bugs et les suggestions sont les bienvenus !** [Partagez-les sur GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## German
+
+### 0.5.1 — 2026-11-13
+
+#### Fehlerbehebungen
+
+- **Fortschrittsübersicht:** der Ladefehler nach dem Spielupdate wurde behoben, das `RailforgedChecklistPage` durch `DlcChecklistPage` ersetzt hat. Die Mod erkennt beide Klassennamen automatisch.
+
+**Fehlermeldungen und Vorschläge sind willkommen!** [Meldet sie auf GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Russian
+
+### 0.5.1 — 2026-11-13
+
+#### Исправления
+
+- **Журнал прогресса:** исправлена ошибка загрузки после обновления игры, в котором `RailforgedChecklistPage` заменён на `DlcChecklistPage`. Мод автоматически распознаёт оба имени класса.
+
+**Сообщения об ошибках и предложения приветствуются!** [Отправляйте их на GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Portuguese Brazil
+
+### 0.5.1 — 2026-11-13
+
+#### Correções
+
+- **Registro de progresso:** corrigido o erro de carregamento após a atualização do jogo que substituiu `RailforgedChecklistPage` por `DlcChecklistPage`. O mod detecta automaticamente qualquer um dos dois nomes de classe.
+
+**Relatos de erros e sugestões são bem-vindos!** [Envie-os pelo GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Chinese
+
+### 0.5.1 — 2026-11-13
+
+#### 修复
+
+- **进度记录:** 修复游戏更新将 `RailforgedChecklistPage` 替换为 `DlcChecklistPage` 后导致的加载错误。模组会自动识别这两个类名。
+
+**欢迎反馈错误并提出建议！** [请在 GitHub 上提交](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Chinese Traditional
+
+### 0.5.1 — 2026-11-13
+
+#### 修正
+
+- **進度紀錄:** 修正遊戲更新將 `RailforgedChecklistPage` 替換為 `DlcChecklistPage` 後導致的載入錯誤。模組會自動辨識這兩個類別名稱。
+
+**歡迎回報錯誤並提出建議！** [請在 GitHub 上提交](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Korean
+
+### 0.5.1 — 2026-11-13
+
+#### 수정 사항
+
+- **진행 기록:** 게임 업데이트에서 `RailforgedChecklistPage`가 `DlcChecklistPage`로 교체된 후 발생하던 로딩 오류를 수정했습니다. 모드는 두 클래스 이름을 모두 자동으로 인식합니다.
+
+**버그 제보와 제안을 환영합니다!** [GitHub에 남겨 주세요](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
+## Japanese
+
+### 0.5.1 — 2026-11-13
+
+#### 修正
+
+- **進行状況の記録:** ゲームのアップデートで `RailforgedChecklistPage` が `DlcChecklistPage` に置き換えられた後に発生する読み込みエラーを修正しました。MODはどちらのクラス名も自動的に認識します。
+
+**不具合報告やご提案をお待ちしています！** [GitHubにお寄せください](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
+
 <!-- Documento generado el 2026-09-30-2221 -->
-
 <!-- 2026-09-23-0040||claude-mt2-CustomClanUIFixes||plugins/frutos-CustomClanUIFixes/CHANGELOG.md||entrada v0.3.0: hoja de progreso, caja de busqueda del filtro, secciones [ProgressGrid] y [CardFilter], traza apagada por defecto -->
-
 <!-- 2026-09-30-1937||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Integracion Soul Savior 0.4.0 completada; consultas validadas y presentacion separada de victorias normales -->
-
 <!-- 2026-09-30-2025||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||0.4.1: FlagOffsetX por defecto cero y negativos antiguos ignorados; documentar reparto y condicion de espacio -->
-
 <!-- 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir cambios y validaciones de 0.4.2 -->
-
 <!-- 2026-09-30-2128||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar entrega 0.4.2, validaciones y pendientes; distinguir push de código de publicación Thunderstore -->
-
 <!-- 2026-09-30-2132||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar corrección de pestaña 0.4.3 y validación visual pendiente -->
-
 <!-- 2026-09-30-2209||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar causa confirmada por log y corrección 0.4.4 con prueba de componente -->
-
 <!-- 2026-09-30-2221||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog bilingüe completo: español primero, enlace English follows al inicio; actualizar instalación 0.4.4 y fallos confirmados 0.4.3 -->
-
 <!-- 2026-09-30-2240||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Reescribir changelog para jugadores; agrupar iteraciones internas bajo 0.4.4; mantener español/inglés y añadir novedades 0.4.5 -->
-
 <!-- 2026-10-01-2326||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.6 centrado en seguimiento de almas -->
-
 <!-- 2026-10-02-0049||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Changelog público bilingüe 0.4.7: cuatro mejoras y reglas del contador, sin notas de pruebas internas -->
-
 <!-- 2026-10-02-0931||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Notas de próxima versión para jugadores en español primero e inglés; cinco mejoras y accesos directos -->
-
 <!-- 2026-10-02-0952||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar pulido visual en español e inglés en sección próxima versión -->
-
 <!-- 2026-10-02-1046||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir refinamientos de tarjetas, tablas, búsqueda y errores a notas bilingües -->
-
 <!-- 2026-10-02-1052||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir mejoras de claridad de controles y retorno de detalle al changelog bilingüe -->
-
 <!-- 2026-10-02-1107||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Registrar ajuste de espacio y textos largos en changelog bilingüe -->
-
 <!-- 2026-10-02-1559||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Registrar corrección de pestaña vacía en notas bilingües -->
-
 <!-- 2026-10-02-1615||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir memoria y limpieza por vista al changelog bilingüe -->
-
 <!-- 2026-10-04-0522||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar mejora de legibilidad en notas públicas bilingües -->
-
 <!-- 2026-10-04-0538||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Documentar desplegable de clanes e icono distinto en notas bilingües -->
-
 <!-- 2026-10-04-0601||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir correccion del icono duplicado a novedades ES/EN -->
-
 <!-- 2026-10-04-0607||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Añadir correccion de superposicion y navegacion del menu en ES/EN -->
-
 <!-- 2026-10-04-1713||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Cerrar novedades como 0.4.8 y explicar en ES/EN publicacion por mejoras Soul Savior con Cards en desarrollo -->
-
 <!-- 2026-10-04-1714||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Conservar separacion CommonMark entre titulos/nota de desarrollo y listas -->
-
 <!-- 2026-10-04-2148||codex-soulsavior-split||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\CHANGELOG.md||Notas UI 0.5.0 centradas en separación -->
+<!-- 2026-11-12-2327||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\CHANGELOG.md||Documentar compatibilidad DLC 0.5.1 en ES/EN -->
+
+<!-- 2026-11-13-0005||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\CHANGELOG.md||Changelog 0.5.1 en diez idiomas, ingles primero, fecha 13-nov, nombres Railforged/Dlc y sin agradecimiento nuevo; historial ES/EN conservado del ZIP Thunderstore 0.5.0 -->

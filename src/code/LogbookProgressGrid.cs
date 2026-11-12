@@ -90,10 +90,17 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             AccessTools.Field(typeof(ClanChecklistSection), "classData");
         static readonly FieldInfo? FFila =
             AccessTools.Field(typeof(ClanChecklistSection), "subclanVictoryLayout");
-        static readonly FieldInfo? FLayoutRail =
-            AccessTools.Field(typeof(RailforgedChecklistPage), "clanSectionsLayoutAllDlcClans");
-        static readonly FieldInfo? FSeccionesRail =
-            AccessTools.Field(typeof(RailforgedChecklistPage), "clanChecklistSections");
+        // Nov-2026 renamed RailforgedChecklistPage to DlcChecklistPage.
+        // Resolve by name: an optional old game type must never become a CLR TypeRef.
+        internal static Type? ResolverPaginaDlc(Assembly gameAssembly)
+            => gameAssembly.GetType("DlcChecklistPage") ?? gameAssembly.GetType("RailforgedChecklistPage");
+        static readonly Type? TipoPaginaDlc = ResolverPaginaDlc(typeof(ChecklistPage).Assembly);
+        static readonly FieldInfo? FLayoutRail = TipoPaginaDlc == null ? null
+            : AccessTools.Field(TipoPaginaDlc, "clanSectionsLayoutAllDlcClans");
+        static readonly FieldInfo? FLayoutRailInicial = TipoPaginaDlc == null ? null
+            : AccessTools.Field(TipoPaginaDlc, "clanSectionsLayoutStartingDlcClans");
+        static readonly FieldInfo? FSeccionesRail = TipoPaginaDlc == null ? null
+            : AccessTools.Field(TipoPaginaDlc, "clanChecklistSections");
         static readonly FieldInfo? FIndicePagina =
             AccessTools.Field(typeof(PaginatedCompendiumSection), "currentPageIndex");
         static readonly FieldInfo? FFilaCrew =
@@ -107,7 +114,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
         // pagina -`RailforgedChecklistPage`, con sus propias raices- y por eso se quedaba con
         // el formato del juego mientras las otras 17 ya iban a una columna. No necesita
         // sub-paginas, solo el mismo formato.
-        static RailforgedChecklistPage? hojaRail;
+        static ChecklistPage? hojaRail;
         static readonly List<Component> seccionesRail = new();
         static int porHoja = 10, subpagina, subpaginas = 1;
         static bool trazado;
@@ -140,9 +147,16 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             }
         }
 
-        [HarmonyPatch(typeof(RailforgedChecklistPage), "Initialize")]
-        [HarmonyPostfix]
-        static void TrasInicializarRail(RailforgedChecklistPage __instance)
+        [HarmonyPatch]
+        static class InicializarDlcPatch
+        {
+            static bool Prepare() => TipoPaginaDlc != null;
+            static MethodBase TargetMethod() => AccessTools.Method(TipoPaginaDlc, "Initialize");
+            [HarmonyPostfix]
+            static void Postfix(ChecklistPage __instance) => TrasInicializarRail(__instance);
+        }
+
+        static void TrasInicializarRail(ChecklistPage __instance)
         {
             hojaRail = __instance;
             seccionesRail.Clear();
@@ -212,7 +226,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
                 }
             return true;
         }
-        static IEnumerator AjustarRailUnosFrames(RailforgedChecklistPage pagina)
+        static IEnumerator AjustarRailUnosFrames(ChecklistPage pagina)
         {
             for (int i = 1; i <= 40; i++)
             {
@@ -306,8 +320,10 @@ namespace mt2_custom_clan_ui_fixes.Plugin
             if (!Enabled || dlcIntegrado || hojaRail == null || seccionesRail.Count == 0) return;
             try
             {
-                if (FLayoutRail?.GetValue(hojaRail) is not Component layout) return;
-                if (layout.transform is not RectTransform rt) return;
+                var layout = FLayoutRail?.GetValue(hojaRail) as Component;
+                if (layout == null || !layout.gameObject.activeSelf)
+                    layout = FLayoutRailInicial?.GetValue(hojaRail) as Component;
+                if (layout == null || layout.transform is not RectTransform rt) return;
                 var rejilla = Rejilla(layout.transform);
                 if (rejilla == null) return;
 
@@ -1488,3 +1504,7 @@ namespace mt2_custom_clan_ui_fixes.Plugin
 // 2026-09-30-2120||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Redirigir también una página DLC que ya fue seleccionada durante ApplyChanges antes del montaje compacto
 
 // 2026-09-30-2121||codex-customclanuifixes-review||C:\Users\david\AppData\Roaming\Thunderstore Mod Manager\DataFolder\MonsterTrain2\profiles\Default\BepInEx\plugins\frutos-CustomClanUIFixes\src\code\LogbookProgressGrid.cs||Comparar identidad de página DLC explícitamente para eliminar aviso de compilación
+
+// 2026-11-12-2324||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\src\code\LogbookProgressGrid.cs||Compatibilidad DLC antiguo/nuevo por nombre y base ChecklistPage; eliminar TypeRef Railforged y admitir layout DLC inicial
+
+// 2026-11-12-2325||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\src\code\LogbookProgressGrid.cs||Exponer resolucion de tipo DLC para regresion con ensamblados antiguos/nuevos/ausentes
