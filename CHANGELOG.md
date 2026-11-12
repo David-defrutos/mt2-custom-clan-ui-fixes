@@ -8,7 +8,7 @@
 
 #### Fixes
 
-- **Progress Record:** fixed the loading error after the game update replaced `RailforgedChecklistPage` with `DlcChecklistPage`. The mod detects either class name automatically.
+- **Progress Record:** fixed the loading error after the game update replaced `RailforgedChecklistPage` with `DlcChecklistPage`.
 
 **Bug reports and suggestions are welcome!** [Report them on GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -100,7 +100,7 @@
 
 #### Correcciones
 
-- **Registro de progreso:** corregido el error de carga tras la actualización del juego que sustituyó `RailforgedChecklistPage` por `DlcChecklistPage`. El mod detecta automáticamente cualquiera de los dos nombres.
+- **Registro de progreso:** corregido el error de carga tras la actualización del juego que sustituyó `RailforgedChecklistPage` por `DlcChecklistPage`.
 
 **¡Los informes de errores y las sugerencias son bienvenidos!** [Compártelos en GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -192,7 +192,7 @@
 
 #### Corrections
 
-- **Registre de progression:** correction de l’erreur de chargement après la mise à jour du jeu qui a remplacé `RailforgedChecklistPage` par `DlcChecklistPage`. Le mod détecte automatiquement l’un ou l’autre nom de classe.
+- **Registre de progression:** correction de l’erreur de chargement après la mise à jour du jeu qui a remplacé `RailforgedChecklistPage` par `DlcChecklistPage`.
 
 **Les signalements de bugs et les suggestions sont les bienvenus !** [Partagez-les sur GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -202,7 +202,7 @@
 
 #### Fehlerbehebungen
 
-- **Fortschrittsübersicht:** der Ladefehler nach dem Spielupdate wurde behoben, das `RailforgedChecklistPage` durch `DlcChecklistPage` ersetzt hat. Die Mod erkennt beide Klassennamen automatisch.
+- **Fortschrittsübersicht:** der Ladefehler nach dem Spielupdate wurde behoben, das `RailforgedChecklistPage` durch `DlcChecklistPage` ersetzt hat.
 
 **Fehlermeldungen und Vorschläge sind willkommen!** [Meldet sie auf GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -212,7 +212,7 @@
 
 #### Исправления
 
-- **Журнал прогресса:** исправлена ошибка загрузки после обновления игры, в котором `RailforgedChecklistPage` заменён на `DlcChecklistPage`. Мод автоматически распознаёт оба имени класса.
+- **Журнал прогресса:** исправлена ошибка загрузки после обновления игры, в котором `RailforgedChecklistPage` заменён на `DlcChecklistPage`.
 
 **Сообщения об ошибках и предложения приветствуются!** [Отправляйте их на GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -222,7 +222,7 @@
 
 #### Correções
 
-- **Registro de progresso:** corrigido o erro de carregamento após a atualização do jogo que substituiu `RailforgedChecklistPage` por `DlcChecklistPage`. O mod detecta automaticamente qualquer um dos dois nomes de classe.
+- **Registro de progresso:** corrigido o erro de carregamento após a atualização do jogo que substituiu `RailforgedChecklistPage` por `DlcChecklistPage`.
 
 **Relatos de erros e sugestões são bem-vindos!** [Envie-os pelo GitHub](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -232,7 +232,7 @@
 
 #### 修复
 
-- **进度记录:** 修复游戏更新将 `RailforgedChecklistPage` 替换为 `DlcChecklistPage` 后导致的加载错误。模组会自动识别这两个类名。
+- **进度记录:** 修复游戏更新将 `RailforgedChecklistPage` 替换为 `DlcChecklistPage` 后导致的加载错误。
 
 **欢迎反馈错误并提出建议！** [请在 GitHub 上提交](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -242,7 +242,7 @@
 
 #### 修正
 
-- **進度紀錄:** 修正遊戲更新將 `RailforgedChecklistPage` 替換為 `DlcChecklistPage` 後導致的載入錯誤。模組會自動辨識這兩個類別名稱。
+- **進度紀錄:** 修正遊戲更新將 `RailforgedChecklistPage` 替換為 `DlcChecklistPage` 後導致的載入錯誤。
 
 **歡迎回報錯誤並提出建議！** [請在 GitHub 上提交](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -252,7 +252,7 @@
 
 #### 수정 사항
 
-- **진행 기록:** 게임 업데이트에서 `RailforgedChecklistPage`가 `DlcChecklistPage`로 교체된 후 발생하던 로딩 오류를 수정했습니다. 모드는 두 클래스 이름을 모두 자동으로 인식합니다.
+- **진행 기록:** 게임 업데이트에서 `RailforgedChecklistPage`가 `DlcChecklistPage`로 교체된 후 발생하던 로딩 오류를 수정했습니다.
 
 **버그 제보와 제안을 환영합니다!** [GitHub에 남겨 주세요](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -262,7 +262,7 @@
 
 #### 修正
 
-- **進行状況の記録:** ゲームのアップデートで `RailforgedChecklistPage` が `DlcChecklistPage` に置き換えられた後に発生する読み込みエラーを修正しました。MODはどちらのクラス名も自動的に認識します。
+- **進行状況の記録:** ゲームのアップデートで `RailforgedChecklistPage` が `DlcChecklistPage` に置き換えられた後に発生する読み込みエラーを修正しました。
 
 **不具合報告やご提案をお待ちしています！** [GitHubにお寄せください](https://github.com/David-defrutos/mt2-custom-clan-ui-fixes/issues).
 
@@ -295,3 +295,5 @@
 <!-- 2026-11-12-2327||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\CHANGELOG.md||Documentar compatibilidad DLC 0.5.1 en ES/EN -->
 
 <!-- 2026-11-13-0005||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\CHANGELOG.md||Changelog 0.5.1 en diez idiomas, ingles primero, fecha 13-nov, nombres Railforged/Dlc y sin agradecimiento nuevo; historial ES/EN conservado del ZIP Thunderstore 0.5.0 -->
+
+<!-- 2026-11-13-0011||codex-customclanuifixes-review||D:\Juegos\MT2_mod\repos\MT2\repos-propios\mt2-custom-clan-ui-fixes\CHANGELOG.md||Retirar frase de deteccion de ambos nombres de las diez traducciones 0.5.1; codigo intacto -->
